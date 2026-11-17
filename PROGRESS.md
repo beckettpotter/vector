@@ -8,7 +8,7 @@ The coding assistant updates this file after every task. Newest note last.
 - [x] 02 Decode packets in the app
 - [x] 03 Flight statistics
 - [x] 04 Connect to the simulator
-- [ ] 05 Live instrument panel (HUD)
+- [x] 05 Live instrument panel (HUD)
 - [ ] 06 Track plot (map tiles later)
 - [ ] 07 Flight recording and history
 - [ ] 08 Recovery view
@@ -25,3 +25,4 @@ The coding assistant updates this file after every task. Newest note last.
 - Task 02 done: Dart decoder; tests loop over all 20 vectors (8 valid, 7 invalid, 3 ground valid, 2 ground invalid) plus the CRC check.
 - Task 03 done: sample flight gives apogee 948.5 m, time to apogee 13.0 s, max speed 143.4 m/s, descent 6.4 m/s, flight time 161.0 s, landing distance 619.7 m, 178 packets.
 - Task 04 done: WebSocket link with 1/2/5 s reconnect, link monitor (lost, stale 5 s, lost 30 s, new-session rules) with fake-clock tests, and a Connect box. Simulator and Ground node quick-pick buttons included.
+- Task 05 done: HUD with STALE/LOST banner, 'last known' greying, feet switch. Verified in the Linux app against the simulator (cloud session, virtual screen): 178 frames, 0 lost, max 948.5 m, all six phases, STALE then LOST after the stream ends.
