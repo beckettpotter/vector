@@ -58,8 +58,9 @@ def check_app() -> list[tuple[str, str, str]]:
     results.append(("PASS" if ok else "FAIL", "App: flutter analyze (finds mistakes in the code)",
                     "" if ok else tail(out)))
     ok, out = run([flutter, "test"], app)
+    passed = [ln for ln in out.splitlines() if "All tests passed" in ln]
     results.append(("PASS" if ok else "FAIL", "App: flutter test (runs the app's tests)",
-                    tail(out.splitlines()[-1] if ok and out.strip() else out)))
+                    passed[-1].strip() if ok and passed else tail(out)))
     return results
 
 
