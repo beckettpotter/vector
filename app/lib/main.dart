@@ -1,13 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'link/link_controller.dart';
+import 'screens/home_screen.dart';
 import 'theme.dart';
 
 void main() {
-  runApp(const VectorApp());
+  runApp(VectorApp(link: LinkController()));
 }
 
 class VectorApp extends StatelessWidget {
-  const VectorApp({super.key});
+  final LinkController link;
+  const VectorApp({super.key, required this.link});
 
   @override
   Widget build(BuildContext context) {
@@ -15,28 +18,7 @@ class VectorApp extends StatelessWidget {
       title: 'Vector',
       debugShowCheckedModeBanner: false,
       theme: buildVectorTheme(),
-      home: const WaitingScreen(),
-    );
-  }
-}
-
-class WaitingScreen extends StatelessWidget {
-  const WaitingScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Vector', style: text.displayLarge?.copyWith(color: VxColors.accent)),
-            const SizedBox(height: 16),
-            Text('Waiting for a rocket', style: text.headlineMedium),
-          ],
-        ),
-      ),
+      home: HomeScreen(link: link),
     );
   }
 }

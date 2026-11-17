@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vector/link/link_controller.dart';
 import 'package:vector/main.dart';
 
 void main() {
   testWidgets('shows the Vector title and the waiting line', (tester) async {
-    await tester.pumpWidget(const VectorApp());
+    final link = LinkController(tick: false);
+    await tester.pumpWidget(VectorApp(link: link));
     expect(find.text('Vector'), findsOneWidget);
     expect(find.text('Waiting for a rocket'), findsOneWidget);
+    expect(find.text('Connect'), findsOneWidget);
+    link.dispose();
   });
 }
