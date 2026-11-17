@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'link/link_controller.dart' show simulatorAddress;
+import 'time_display.dart';
 
 class RocketProfile {
   String name;
@@ -38,6 +39,7 @@ class AppSettings extends ChangeNotifier {
       final p = await SharedPreferences.getInstance();
       s._prefs = p;
       s._useFeet = _read(() => p.getBool('useFeet'), false);
+      s._timeZone = _read(() => p.getString('timeZone'), chicagoZone);
       s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
       s._address = _read(() => p.getString('address'), simulatorAddress);
       s._lastRocketName = _read(() => p.getString('lastRocketName'), '');
@@ -74,6 +76,36 @@ class AppSettings extends ChangeNotifier {
     _save((p) => p.setBool('useFeet', v));
     notifyListeners();
   }
+
+  /// How clock times are shown: an IANA zone name (default Chicago),
+  /// [deviceZoneSetting] or [locationZoneSetting]. Display only; stored times stay UTC.
+  String _timeZone = chicagoZone;
+  String get timeZone => _timeZone;
+  set timeZone(String v) {
+    if (v == _timeZone) return;
+    _timeZone = v;
+    _save((p) => p.setString('timeZone', v));
+    notifyListeners();
+  }
+
+  /// The zone found from this device's location, while location is on. Not saved.
+  String? _locationTimeZone;
+  String? get locationTimeZone => _locationTimeZone;
+  set locationTimeZone(String? v) {
+    if (v == _locationTimeZone) return;
+    _locationTimeZone = v;
+    notifyListeners();
+  }
+
+  /// The zone actually used. "From my location" with no location yet uses
+  /// this device's own zone.
+  String get displayZone {
+    if (_timeZone == locationZoneSetting) return _locationTimeZone ?? deviceZoneSetting;
+    if (_timeZone == deviceZoneSetting || isKnownZone(_timeZone)) return _timeZone;
+    return chicagoZone;
+  }
+
+  String formatTime(DateTime t) => formatClock(t, displayZone);
 
   /// Hide the STALE/LOST banner by itself once it can be dismissed (20 s).
   bool _autoHideWarning = false;

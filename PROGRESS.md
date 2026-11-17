@@ -27,7 +27,7 @@ The coding assistant updates this file after every task. Newest note last.
   Done when: items can be added, edited, deleted (stretch: reordered) and reset to defaults; each item has an optional
   note and there is one general launch notes box; ticks reset each launch while items and notes persist; the checklist
   state and notes are saved in the flight's `.json` and shown in History; broken storage falls back to the defaults.
-- [ ] 15 (v2 f) Local time display.
+- [x] 15 (v2 f) Local time display.
   Done when: a "Time zone" setting offers Chicago (default, IANA `America/Chicago`, shown as "Chicago time"), this
   device's zone, from my location (only when location is on) and any zone from a list; History, flight start, notes and
   checklist show local time; everything stored stays UTC; CSV bytes and KML (UTC) are unchanged; tests cover daylight
@@ -71,6 +71,7 @@ The coding assistant updates this file after every task. Newest note last.
 - v2 plan added (`docs/V2_PLAN.md`) as tasks 13 to 18. Beckett's OpenRocket export and `.ork` are now `app/test/fixtures/openrocket_real.csv` and `app/test/fixtures/journey75.ork` (not used by any test yet; task 17).
 - Task 13 (v2 e) done: after 20 s without a packet the banner shows Dismiss; Pre-flight has "Auto-hide the warning after 20 s" (off by default, saved). Dismissed or auto-hidden, a small "No link m:ss" chip stays (amber when stale, red when lost) and tiles keep "last known". The dismissal belongs to that one outage: the next packet re-arms the banner. "20 s" is counted from the last packet, the same number the banner shows. 3 new widget/settings tests. Not yet looked at by eye in the running app.
 - Task 14 (v2 d) done: Pre-flight "Edit list" adds, renames, deletes and moves items up/down; "Reset to defaults" (asks first; keeps the launch notes). Each item has a note button; a "Launch notes" box sits under the list. Items and notes are saved on the device (`lib/checklist.dart`); a broken saved list falls back to the five built-in items. Built-in items keep their live hint (armed, GPS, battery, signal) when renamed. At the first boost packet (or a new tracker session) the app keeps a snapshot, then clears the ticks; the snapshot goes into the flight `.json` as `checklist` and `launchNotes`, and the History detail shows it. Older flights without it still load. 6 new tests.
+- Task 15 (v2 f) done: Pre-flight "Time zone" setting: Chicago time (default, `America/Chicago`), this device's zone, from my location (falls back to the device zone until task 16 supplies one), or any zone from a searchable list. History, the flight detail and new default flight names show the chosen zone ("2026-12-12 12:00 Chicago time"). Stored times, CSV and KML stay UTC; old flight names keep their "UTC" text. New package: `timezone` (pure Dart, zone data built in, works offline). 5 new tests, including both 2026 daylight-saving changes.
 
 ## Waiting (decisions or things only Beckett can do)
 

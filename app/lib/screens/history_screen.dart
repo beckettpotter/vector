@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../protocol/flight_stats.dart';
 import '../protocol/packet.dart';
+import '../settings.dart';
 import '../storage/flight_store.dart';
 import '../storage/recorder.dart';
 import '../theme.dart';
@@ -22,19 +23,19 @@ FlightStats? tryStats(List<GroundFrame> frames) {
   }
 }
 
-String formatDateUtc(DateTime t) {
-  final u = t.toUtc();
-  String two(int v) => v.toString().padLeft(2, '0');
-  return '${u.year}-${two(u.month)}-${two(u.day)} ${two(u.hour)}:${two(u.minute)} UTC';
-}
-
 class HistoryView extends StatefulWidget {
   final FlightStore store;
   final Recorder recorder;
   final DetailActions actions;
   final Future<void> Function(FlightRecord record, List<GroundFrame> frames)? onReplay;
+  final AppSettings settings;
   const HistoryView(
-      {super.key, required this.store, required this.recorder, this.actions = const DetailActions(), this.onReplay});
+      {super.key,
+      required this.store,
+      required this.recorder,
+      required this.settings,
+      this.actions = const DetailActions(),
+      this.onReplay});
 
   @override
   State<HistoryView> createState() => _HistoryViewState();
@@ -106,7 +107,7 @@ class _HistoryViewState extends State<HistoryView> {
                                   widget.onReplay!(f.record, await widget.store.load(f.record)),
                             ),
                       title: Text(f.record.meta.name, style: text.titleLarge),
-                      subtitle: Text(formatDateUtc(f.record.meta.startedAtUtc),
+                      subtitle: Text(widget.settings.formatTime(f.record.meta.startedAtUtc),
                           style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
                       trailing: Text(
                         f.stats == null ? '${f.packetCount} pkts' : '${f.stats!.apogeeM.toStringAsFixed(1)} m',
@@ -114,7 +115,8 @@ class _HistoryViewState extends State<HistoryView> {
                       ),
                       onTap: () async {
                         await Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => FlightDetailScreen(store: widget.store, record: f.record, actions: widget.actions),
+                          builder: (_) => FlightDetailScreen(
+                              store: widget.store, record: f.record, settings: widget.settings, actions: widget.actions),
                         ));
                         _reload();
                       },

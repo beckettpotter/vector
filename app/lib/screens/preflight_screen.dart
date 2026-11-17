@@ -6,6 +6,7 @@ import '../protocol/packet.dart';
 import '../checklist.dart';
 import '../settings.dart';
 import '../theme.dart';
+import '../time_display.dart';
 
 class PreflightView extends StatelessWidget {
   final LinkController link;
@@ -62,6 +63,17 @@ class PreflightView extends StatelessWidget {
               title: Text('Show altitude in feet', style: text.titleLarge),
               value: settings.useFeet,
               onChanged: (v) => settings.useFeet = v,
+            ),
+            ListTile(
+              key: const Key('timeZone'),
+              title: Text('Time zone', style: text.titleLarge),
+              subtitle: Text(
+                '${timeZoneChoiceLabel(settings)}. Now: ${settings.formatTime(DateTime.now())}. '
+                'Only changes how times are shown; saved files keep UTC.',
+                style: text.bodyMedium?.copyWith(color: VxColors.textDim),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => pickTimeZone(context, settings),
             ),
             const SizedBox(height: 24),
             Text('Warnings', style: text.headlineMedium),
@@ -336,6 +348,88 @@ class _ChecklistSectionState extends State<ChecklistSection> {
           onPressed: () => c.remove(item),
         ),
       ]),
+    );
+  }
+}
+
+String timeZoneChoiceLabel(AppSettings s) => switch (s.timeZone) {
+      chicagoZone => 'Chicago time (default)',
+      deviceZoneSetting => "This device's time zone",
+      locationZoneSetting => s.locationTimeZone == null
+          ? "From my location (no location yet, using this device's zone)"
+          : 'From my location: ${zoneLabel(s.locationTimeZone!)}',
+      _ => zoneLabel(s.timeZone),
+    };
+
+Future<void> pickTimeZone(BuildContext context, AppSettings settings) async {
+  final choice = await showDialog<String>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: const Text('Show times in'),
+      children: [
+        for (final (value, label, sub) in [
+          (chicagoZone, 'Chicago time (default)', 'The club field at Hearne. Daylight saving is handled.'),
+          (deviceZoneSetting, "This device's time zone", 'Whatever this phone or computer is set to.'),
+          (locationZoneSetting, 'From my location', 'Uses "Use my location" when it is on.'),
+          ('pick', 'Another zone...', 'Pick any zone from a list.'),
+        ])
+          SimpleDialogOption(
+            key: Key('zone_$value'),
+            onPressed: () => Navigator.pop(ctx, value),
+            child: ListTile(title: Text(label), subtitle: Text(sub)),
+          ),
+      ],
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  if (choice != 'pick') {
+    settings.timeZone = choice;
+    return;
+  }
+  final zone = await showDialog<String>(context: context, builder: (_) => const _ZoneList());
+  if (zone != null) settings.timeZone = zone;
+}
+
+class _ZoneList extends StatefulWidget {
+  const _ZoneList();
+  @override
+  State<_ZoneList> createState() => _ZoneListState();
+}
+
+class _ZoneListState extends State<_ZoneList> {
+  final _all = allZoneNames();
+  String _filter = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final f = _filter.toLowerCase().replaceAll(' ', '_');
+    final shown = [for (final z in _all) if (z.toLowerCase().contains(f)) z];
+    return AlertDialog(
+      title: const Text('Pick a time zone'),
+      content: SizedBox(
+        width: 420,
+        height: 480,
+        child: Column(children: [
+          TextField(
+            key: const Key('zoneSearch'),
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Search (for example Denver)', border: OutlineInputBorder()),
+            onChanged: (v) => setState(() => _filter = v.trim()),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.builder(
+              itemCount: shown.length,
+              itemBuilder: (context, i) => ListTile(
+                title: Text(zoneLabel(shown[i])),
+                subtitle: Text(shown[i]),
+                onTap: () => Navigator.pop(context, shown[i]),
+              ),
+            ),
+          ),
+        ]),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))],
     );
   }
 }

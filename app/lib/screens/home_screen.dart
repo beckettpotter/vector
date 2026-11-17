@@ -91,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist),
                 2 => TrackView(link: link),
                 3 => RecoveryView(link: link, settings: s.settings),
-                4 => HistoryView(store: s.store, recorder: s.recorder, actions: _actions, onReplay: _replay),
+                4 => HistoryView(
+                    store: s.store, recorder: s.recorder, settings: s.settings, actions: _actions, onReplay: _replay),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

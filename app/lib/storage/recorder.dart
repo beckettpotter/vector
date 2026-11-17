@@ -119,7 +119,10 @@ class Recorder extends ChangeNotifier {
   }
 }
 
-String defaultFlightName(int rocketId, DateTime t) {
+/// For example 'Rocket 1, 2026-12-12 18:00 UTC', or with [formatTime]
+/// 'Rocket 1, 2026-12-12 12:00 Chicago time'.
+String defaultFlightName(int rocketId, DateTime t, {String Function(DateTime t)? formatTime}) {
+  if (formatTime != null) return 'Rocket $rocketId, ${formatTime(t)}';
   final u = t.toUtc();
   String two(int v) => v.toString().padLeft(2, '0');
   return 'Rocket $rocketId, ${u.year}-${two(u.month)}-${two(u.day)} ${two(u.hour)}:${two(u.minute)} UTC';

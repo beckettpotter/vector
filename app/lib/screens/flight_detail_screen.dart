@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../protocol/flight_stats.dart';
 import '../protocol/packet.dart';
+import '../settings.dart';
 import '../storage/flight_store.dart';
 import '../theme.dart';
 import 'format.dart';
@@ -18,7 +19,9 @@ class FlightDetailScreen extends StatefulWidget {
   final FlightStore store;
   final FlightRecord record;
   final DetailActions actions;
-  const FlightDetailScreen({super.key, required this.store, required this.record, this.actions = const DetailActions()});
+  final AppSettings settings;
+  const FlightDetailScreen(
+      {super.key, required this.store, required this.record, required this.settings, this.actions = const DetailActions()});
 
   @override
   State<FlightDetailScreen> createState() => _FlightDetailScreenState();
@@ -88,7 +91,7 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(formatDateUtc(widget.record.meta.startedAtUtc), style: text.bodyLarge),
+              Text(widget.settings.formatTime(widget.record.meta.startedAtUtc), style: text.bodyLarge),
               Text('File: ${widget.record.hexFile.path}', style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
               const SizedBox(height: 12),
               if (widget.actions.build != null)

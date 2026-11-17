@@ -41,7 +41,7 @@ class Services {
       link: link,
       nameFor: (rocketId, started) {
         final profile = settings.profileFor(rocketId);
-        final base = defaultFlightName(rocketId, started);
+        final base = defaultFlightName(rocketId, started, formatTime: settings.formatTime);
         return profile == null ? base : base.replaceFirst('Rocket $rocketId', profile.name);
       },
       fillMeta: checklist.fillFlight,
