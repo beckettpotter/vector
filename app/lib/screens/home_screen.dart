@@ -1,11 +1,17 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../link/replay_link.dart';
+import '../protocol/packet.dart';
 import '../services.dart';
+import '../storage/flight_store.dart';
 import '../theme.dart';
 import 'connect_box.dart';
+import 'export_actions.dart';
+import 'flight_detail_screen.dart';
 import 'history_screen.dart';
 import 'hud_screen.dart';
 import 'recovery_screen.dart';
+import 'replay_bar.dart';
 import 'track_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,6 +24,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
+
+  Future<void> _replay(FlightRecord record, List<GroundFrame> frames) async {
+    if (frames.isEmpty) return;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    setState(() => _tab = 0);
+    await widget.services.link.useSource(ReplayLink(frames, name: record.meta.name, speed: 5));
+  }
+
+  late final DetailActions _actions = DetailActions((context, record, frames) => [
+        FilledButton.icon(
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Replay'),
+          onPressed: () => _replay(record, frames),
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.table_chart),
+          label: const Text('Export CSV'),
+          onPressed: () => exportFlight(context, record, frames, 'csv'),
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.public),
+          label: const Text('Export KML'),
+          onPressed: () => exportFlight(context, record, frames, 'kml'),
+        ),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +72,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          ListenableBuilder(listenable: link, builder: (context, _) => StaleBanner(link: link)),
+          ListenableBuilder(
+            listenable: link,
+            builder: (context, _) {
+              final src = link.source;
+              return Column(children: [
+                if (src is ReplayLink) ReplayBar(link: link, replay: src),
+                StaleBanner(link: link),
+              ]);
+            },
+          ),
           Expanded(
             child: LayoutBuilder(builder: (context, c) {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
                 1 => TrackView(link: link),
                 2 => RecoveryView(link: link, settings: s.settings),
-                3 => HistoryView(store: s.store, recorder: s.recorder),
+                3 => HistoryView(store: s.store, recorder: s.recorder, actions: _actions, onReplay: _replay),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

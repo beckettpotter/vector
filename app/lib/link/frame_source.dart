@@ -13,6 +13,9 @@ abstract class FrameSource {
   Stream<LinkConnection> get states;
   LinkConnection get state;
   String? get lastError;
+
+  /// True for a replay of a saved flight (not recorded again, shown as REPLAY).
+  bool get isReplay => false;
   Future<void> start();
   Future<void> stop();
 }

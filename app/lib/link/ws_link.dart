@@ -30,6 +30,8 @@ class WsLink implements FrameSource {
   LinkConnection get state => _state;
   @override
   String? lastError;
+  @override
+  bool get isReplay => false;
 
   bool _wanted = false;
   int _generation = 0; // ignores results of connects started before stop()

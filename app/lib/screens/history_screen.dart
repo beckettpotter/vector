@@ -32,7 +32,9 @@ class HistoryView extends StatefulWidget {
   final FlightStore store;
   final Recorder recorder;
   final DetailActions actions;
-  const HistoryView({super.key, required this.store, required this.recorder, this.actions = const DetailActions()});
+  final Future<void> Function(FlightRecord record, List<GroundFrame> frames)? onReplay;
+  const HistoryView(
+      {super.key, required this.store, required this.recorder, this.actions = const DetailActions(), this.onReplay});
 
   @override
   State<HistoryView> createState() => _HistoryViewState();
@@ -94,6 +96,15 @@ class _HistoryViewState extends State<HistoryView> {
                     color: VxColors.surface,
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: widget.onReplay == null
+                          ? null
+                          : IconButton(
+                              tooltip: 'Replay this flight',
+                              iconSize: 36,
+                              icon: const Icon(Icons.play_circle, color: VxColors.accent),
+                              onPressed: () async =>
+                                  widget.onReplay!(f.record, await widget.store.load(f.record)),
+                            ),
                       title: Text(f.record.meta.name, style: text.titleLarge),
                       subtitle: Text(formatDateUtc(f.record.meta.startedAtUtc),
                           style: text.bodyMedium?.copyWith(color: VxColors.textDim)),

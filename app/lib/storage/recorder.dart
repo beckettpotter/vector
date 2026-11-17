@@ -47,6 +47,7 @@ class Recorder extends ChangeNotifier {
   }
 
   Future<void> _handle(GroundFrame frame, bool newSession) async {
+    if (link.source?.isReplay ?? false) return; // a replay is already saved
     final p = frame.packet;
     if (newSession) {
       await _finish();
