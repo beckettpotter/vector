@@ -14,7 +14,7 @@ The coding assistant updates this file after every task. Newest note last.
 - [x] 08 Recovery view
 - [x] 09 Export and replay
 - [ ] 10 Firmware: packet library check
-- [ ] 11 Firmware: phase detector now; boards need a club review
+- [x] 11 Firmware: phase detector now; boards need a club review (Part A only)
 - [ ] 12 Polish and the launch-day checklist
 
 ## Notes
@@ -30,3 +30,5 @@ The coding assistant updates this file after every task. Newest note last.
 - Task 07 done: automatic recording to plain .hex + .json files, History list and detail (stats, altitude and speed plots, rename, delete with confirmation). Recording starts at the first non-pad packet and keeps up to 30 pad packets from before it (so an idle tracker on the pad is not saved). Files live in Documents/Vector/flights (falls back to ~/.local/share/club.vector.vector/Vector/flights). Verified in the Linux app: simulated flight saved with apogee 948.5 m and all stats matching.
 - Task 08 done: Recovery tab with distance, bearing (degrees + 16-point letters), north-up arrow, copyable coordinates, fix age, typed viewer position pre-filled with the pad, and a ROCKET STILL FLYING label. Verified in the Linux app: 620 m, 76 deg ENE after the simulated landing. Device GPS and compass: waiting for a decision (platform permissions).
 - Task 09 done: CSV export (byte-identical to sample_flight.csv, also checked on a file exported from the running app), KML export (track, pad, landing), and replay of saved flights at 1x/5x/10x with play/pause and a scrub slider, through the same link monitor (replays are not recorded again). Exports go to Vector/exports/; phones and Mac open the share sheet, Linux shows the saved path (share_plus cannot share files on Linux). Test-only dev package: xml (to check the KML parses).
+- Task 10 NOT done: this cloud session cannot reach the PlatformIO registry, so `pio test -e native` must be run on Beckett's computer (see the commands in HANDOFF/README). Nothing in firmware/ changed for it.
+- Task 11 Part A done: `firmware/lib/phase_detector/` with 6 native tests in `firmware/test/test_phase/` (made-up flight with sequence and change times, pad jitter, low-altitude speed spike, noisy flight, never backwards, 5 s landing streak). They pass with a local stand-in for Unity; they still need a real `pio test -e native` run. Part B: waiting for club review (`docs/HARDWARE_DECISIONS.md`).
