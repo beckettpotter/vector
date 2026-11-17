@@ -115,8 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     settings: s.settings,
                     checklist: s.checklist,
                     location: s.location,
-                    projections: s.projections),
-                2 => TrackView(link: link, location: s.location),
+                    projections: s.projections,
+                    maps: s.maps),
+                2 => TrackView(link: link, location: s.location, maps: s.maps, settings: s.settings),
                 3 => RecoveryView(link: link, settings: s.settings, location: s.location),
                 4 => HistoryView(
                     store: s.store, recorder: s.recorder, settings: s.settings, actions: _actions, onReplay: _replay),

@@ -3,12 +3,14 @@ import 'package:material_ui/material_ui.dart';
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
 import '../location.dart';
+import '../maps/maps.dart';
 import '../openrocket/projection_store.dart';
 import '../protocol/packet.dart';
 import '../checklist.dart';
 import '../settings.dart';
 import '../theme.dart';
 import '../time_display.dart';
+import 'map_pack_screen.dart';
 import 'projection_widgets.dart';
 
 class PreflightView extends StatelessWidget {
@@ -17,18 +19,20 @@ class PreflightView extends StatelessWidget {
   final Checklist checklist;
   final DeviceLocation? location;
   final Projections? projections;
+  final Maps? maps;
   const PreflightView(
       {super.key,
       required this.link,
       required this.settings,
       required this.checklist,
       this.location,
-      this.projections});
+      this.projections,
+      this.maps});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([link, settings, checklist, location, projections]),
+      listenable: Listenable.merge([link, settings, checklist, location, projections, maps]),
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final frame = link.monitor.status == LinkStatus.live ? link.monitor.latest : null;
@@ -94,6 +98,22 @@ class PreflightView extends StatelessWidget {
               const SizedBox(height: 24),
               Text('Location', style: text.headlineMedium),
               LocationSetting(settings: settings, location: location!),
+            ],
+            if (maps != null) ...[
+              const SizedBox(height: 24),
+              Text('Maps', style: text.headlineMedium),
+              ListTile(
+                key: const Key('openMaps'),
+                title: Text('Download map for the field', style: text.titleLarge),
+                subtitle: Text(
+                    maps!.packs.isEmpty
+                        ? 'No map saved. The Track tab shows the plot until you download one (needs internet, at home).'
+                        : 'Saved: ${maps!.packs.map((p) => p.name).join(', ')}. Works offline.',
+                    style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => MapPackScreen(maps: maps!, location: location))),
+              ),
             ],
             const SizedBox(height: 24),
             Text('Warnings', style: text.headlineMedium),

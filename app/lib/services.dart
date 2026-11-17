@@ -7,6 +7,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'checklist.dart';
 import 'link/link_controller.dart';
 import 'location.dart';
+import 'maps/map_pack.dart';
+import 'maps/maps.dart';
 import 'openrocket/projection_store.dart';
 import 'protocol/packet.dart';
 import 'settings.dart';
@@ -22,6 +24,7 @@ class Services {
   final Checklist checklist;
   final DeviceLocation location;
   final Projections projections;
+  final Maps maps;
 
   Services(
       {required this.link,
@@ -30,10 +33,12 @@ class Services {
       required this.recorder,
       Checklist? checklist,
       DeviceLocation? location,
-      Projections? projections})
+      Projections? projections,
+      Maps? maps})
       : checklist = checklist ?? Checklist(),
         location = location ?? DeviceLocation(GeolocatorSource()),
-        projections = projections ?? Projections() {
+        projections = projections ?? Projections(),
+        maps = maps ?? Maps() {
     // "From my location" time zone, only while location is on.
     this.location.addListener(() {
       settings.locationTimeZone = this.location.isOn ? this.location.timeZone : null;
@@ -59,6 +64,8 @@ class Services {
       saveActive: (id) => settings.activeProjectionId = id,
     );
     await projections.load();
+    final maps = Maps(store: MapPackStore(mapsFolderBeside(flights)));
+    await maps.load();
     var lastRocket = settings.lastRocketName;
     settings.addListener(() {
       if (settings.lastRocketName != lastRocket) projections.rocketChosen(lastRocket = settings.lastRocketName);
@@ -85,7 +92,8 @@ class Services {
         store: store,
         recorder: recorder,
         checklist: checklist,
-        projections: projections);
+        projections: projections,
+        maps: maps);
     services._watchLink();
     // Turned on before: start again without a prompt if still allowed.
     if (settings.useLocation) unawaited(services.location.start(ask: false));

@@ -41,6 +41,7 @@ class AppSettings extends ChangeNotifier {
       s._useFeet = _read(() => p.getBool('useFeet'), false);
       s._activeProjectionId = _read(() => p.getString('activeProjectionId'), '');
       s._waiverCeilingM = _read(() => p.getDouble('waiverCeilingM'), null);
+      s._showMap = _read(() => p.getBool('showMap'), true);
       s._useLocation = _read(() => p.getBool('useLocation'), false);
       s._timeZone = _read(() => p.getString('timeZone'), chicagoZone);
       s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
@@ -98,6 +99,16 @@ class AppSettings extends ChangeNotifier {
     if (v == _waiverCeilingM) return;
     _waiverCeilingM = v;
     _save((p) => v == null ? p.remove('waiverCeilingM') : p.setDouble('waiverCeilingM', v));
+    notifyListeners();
+  }
+
+  /// Track tab: satellite map (when a map is downloaded for the area) or the plot.
+  bool _showMap = true;
+  bool get showMap => _showMap;
+  set showMap(bool v) {
+    if (v == _showMap) return;
+    _showMap = v;
+    _save((p) => p.setBool('showMap', v));
     notifyListeners();
   }
 
