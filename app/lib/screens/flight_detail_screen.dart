@@ -99,6 +99,7 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
                     style: text.titleLarge?.copyWith(color: VxColors.warning))
               else
                 _StatsGrid(stats),
+              ..._checklist(text),
               const SizedBox(height: 24),
               Text('Altitude above pad (m)', style: text.titleLarge),
               SizedBox(height: 260, child: _plot(frames, (p) => p.baroAltM, VxColors.accent)),
@@ -110,6 +111,37 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
         },
       ),
     );
+  }
+
+  List<Widget> _checklist(TextTheme text) {
+    final meta = widget.record.meta;
+    final items = meta.checklist;
+    if (items == null && meta.launchNotes.isEmpty) return const [];
+    final dim = text.bodyMedium?.copyWith(color: VxColors.textDim);
+    return [
+      const SizedBox(height: 24),
+      Text('Pre-flight checklist at launch', style: text.titleLarge),
+      for (final c in items ?? const <CheckedItem>[])
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(c.ticked ? Icons.check_box : Icons.check_box_outline_blank,
+                color: c.ticked ? VxColors.ok : VxColors.warning),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${c.text}${c.ticked ? '' : ' (not ticked)'}', style: text.bodyLarge),
+                if (c.note.isNotEmpty) Text('Note: ${c.note}', style: dim),
+              ]),
+            ),
+          ]),
+        ),
+      if (meta.launchNotes.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text('Launch notes', style: text.bodyLarge),
+        Text(meta.launchNotes, style: dim),
+      ],
+    ];
   }
 
   Widget _plot(List<GroundFrame> frames, double Function(Packet) y, Color color) {

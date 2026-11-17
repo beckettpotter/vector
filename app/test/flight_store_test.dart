@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vector/checklist.dart';
 import 'package:vector/link/link_controller.dart';
 import 'package:vector/protocol/flight_stats.dart';
 import 'package:vector/protocol/packet.dart';
+import 'package:vector/services.dart';
+import 'package:vector/settings.dart';
 import 'package:vector/storage/flight_store.dart';
 import 'package:vector/storage/recorder.dart';
 
@@ -159,5 +162,46 @@ void main() {
       await rec.flush();
       expect(await store.list(), isEmpty);
     });
+  });
+
+  test('the checklist as ticked before launch is saved with the flight', () async {
+    final link = LinkController(nowMs: () => 0, tick: false);
+    final checklist = Checklist();
+    final rec = Recorder(store: store, link: link, fillMeta: checklist.fillFlight);
+    final s = Services(link: link, settings: AppSettings(), store: store, recorder: rec, checklist: checklist);
+    checklist.edit(checklist.items[1], note: 'took 40 s');
+    checklist.launchNotes = 'Calm, sunny';
+    var ticked = false;
+    for (final f in sampleFlight()) {
+      link.handleFrame(f);
+      if (!ticked && f.packet.phase == Phase.pad) {
+        checklist.toggle('armed');
+        checklist.toggle('gps');
+        ticked = true;
+      }
+    }
+    await rec.flush();
+    expect(checklist.ticked, isEmpty); // cleared at launch
+    final record = (await store.list()).single;
+    final saved = jsonDecode(record.jsonFile.readAsStringSync()) as Map<String, dynamic>;
+    expect(saved['launchNotes'], 'Calm, sunny');
+    final items = record.meta.checklist!;
+    expect(items.map((c) => c.ticked), [true, true, false, false, false]);
+    expect(items[1].text, 'GPS fix on the pad');
+    expect(items[1].note, 'took 40 s');
+    rec.dispose();
+    link.dispose();
+    expect(s.checklist, same(checklist));
+  });
+
+  test('flights saved before checklists existed still load', () async {
+    final w = await store.startFlight(FlightMeta(name: 'old', rocketId: 1, startedAtUtc: DateTime.utc(2026)));
+    for (final f in sampleFlight().take(20)) {
+      w.append(f);
+    }
+    await w.finish();
+    final r = (await store.list()).single;
+    expect(r.meta.checklist, isNull);
+    expect(jsonDecode(r.jsonFile.readAsStringSync()), isNot(contains('checklist')));
   });
 }

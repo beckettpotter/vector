@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'checklist.dart';
 import 'link/link_controller.dart';
 import 'protocol/packet.dart';
 import 'settings.dart';
@@ -19,14 +20,20 @@ class Services {
 
   Services({required this.link, required this.settings, required this.store, required this.recorder, Checklist? checklist})
       : checklist = checklist ?? Checklist() {
-    // Checklist ticks reset at each launch and each new tracker session.
+    // Checklist ticks clear at each launch and each new tracker session,
+    // after a snapshot is kept for the flight record.
+    var boostSeen = false;
     link.frameListeners.add((frame, newSession) {
-      if (newSession || frame.packet.phase == Phase.boost) this.checklist.reset();
+      final boost = frame.packet.phase == Phase.boost;
+      if (newSession || (boost && !boostSeen)) this.checklist.startLaunch();
+      if (newSession) boostSeen = false;
+      if (boost) boostSeen = true;
     });
   }
 
   static Future<Services> create() async {
     final settings = await AppSettings.load();
+    final checklist = await Checklist.load();
     final link = LinkController()..address = settings.address;
     final store = FlightStore(await flightsFolder());
     final recorder = Recorder(
@@ -37,8 +44,10 @@ class Services {
         final base = defaultFlightName(rocketId, started);
         return profile == null ? base : base.replaceFirst('Rocket $rocketId', profile.name);
       },
+      fillMeta: checklist.fillFlight,
     );
-    final services = Services(link: link, settings: settings, store: store, recorder: recorder);
+    final services =
+        Services(link: link, settings: settings, store: store, recorder: recorder, checklist: checklist);
     services._watchLink();
     return services;
   }

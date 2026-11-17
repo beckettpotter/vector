@@ -18,12 +18,15 @@ class Recorder extends ChangeNotifier {
   final FlightStore store;
   final LinkController link;
   final String Function(int rocketId, DateTime startedAtUtc)? nameFor;
+
+  /// Adds extra details (the pre-flight checklist) to a flight as it starts.
+  final void Function(FlightMeta meta)? fillMeta;
   final DateTime Function() clockUtc;
 
   static const int padBufferSize = 30;
   static const int afterLandingMs = 15000;
 
-  Recorder({required this.store, required this.link, this.nameFor, DateTime Function()? clockUtc})
+  Recorder({required this.store, required this.link, this.nameFor, this.fillMeta, DateTime Function()? clockUtc})
       : clockUtc = clockUtc ?? (() => DateTime.now().toUtc()) {
     link.frameListeners.add(_onFrame);
     link.addListener(_onLinkChange);
@@ -66,6 +69,7 @@ class Recorder extends ChangeNotifier {
         rocketId: p.rocketId,
         startedAtUtc: started,
       );
+      fillMeta?.call(meta);
       _writer = await store.startFlight(meta);
       for (final f in _padBuffer) {
         _writer!.append(f);

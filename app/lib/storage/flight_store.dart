@@ -5,8 +5,22 @@ import '../protocol/packet.dart';
 
 /// A flight is two plain files in the flights folder:
 ///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.hex`   one ground frame as hex per line
-///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.json`  {name, rocketId, startedAtUtc, padLat, padLon, notes}
+///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.json`  {name, rocketId, startedAtUtc, padLat, padLon, notes,
+///                                               checklist, launchNotes}
 /// No database, so a flight can be copied, emailed or opened in any editor.
+/// One pre-flight checklist line as it was at launch.
+class CheckedItem {
+  final String text;
+  final bool ticked;
+  final String note;
+  const CheckedItem({required this.text, required this.ticked, this.note = ''});
+
+  Map<String, dynamic> toJson() => {'text': text, 'ticked': ticked, 'note': note};
+
+  factory CheckedItem.fromJson(Map<String, dynamic> j) => CheckedItem(
+      text: j['text'] as String? ?? '', ticked: j['ticked'] as bool? ?? false, note: j['note'] as String? ?? '');
+}
+
 class FlightMeta {
   String name;
   final int rocketId;
@@ -15,6 +29,11 @@ class FlightMeta {
   double? padLon;
   String notes;
 
+  /// The pre-flight checklist at launch, or null for flights saved before
+  /// checklists were recorded.
+  List<CheckedItem>? checklist;
+  String launchNotes;
+
   FlightMeta({
     required this.name,
     required this.rocketId,
@@ -22,6 +41,8 @@ class FlightMeta {
     this.padLat,
     this.padLon,
     this.notes = '',
+    this.checklist,
+    this.launchNotes = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +52,8 @@ class FlightMeta {
         'padLat': padLat,
         'padLon': padLon,
         'notes': notes,
+        if (checklist != null) 'checklist': [for (final c in checklist!) c.toJson()],
+        if (launchNotes.isNotEmpty) 'launchNotes': launchNotes,
       };
 
   factory FlightMeta.fromJson(Map<String, dynamic> j) => FlightMeta(
@@ -40,7 +63,18 @@ class FlightMeta {
         padLat: (j['padLat'] as num?)?.toDouble(),
         padLon: (j['padLon'] as num?)?.toDouble(),
         notes: j['notes'] as String? ?? '',
+        checklist: _readChecklist(j['checklist']),
+        launchNotes: j['launchNotes'] as String? ?? '',
       );
+
+  static List<CheckedItem>? _readChecklist(Object? v) {
+    if (v is! List) return null;
+    try {
+      return [for (final e in v) CheckedItem.fromJson(e as Map<String, dynamic>)];
+    } catch (_) {
+      return null; // a damaged checklist never hides the flight
+    }
+  }
 }
 
 class FlightRecord {

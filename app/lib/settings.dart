@@ -126,26 +126,3 @@ class AppSettings extends ChangeNotifier {
   double? viewerLat;
   double? viewerLon;
 }
-
-/// Pre-flight checklist ticks. Reset at each launch.
-class Checklist extends ChangeNotifier {
-  static const items = [
-    'Tracker armed',
-    'GPS fix on the pad',
-    'Battery above 3.7 V',
-    'Signal check',
-    'Club RSO approval',
-  ];
-  final Set<String> ticked = {};
-
-  void toggle(String item) {
-    ticked.contains(item) ? ticked.remove(item) : ticked.add(item);
-    notifyListeners();
-  }
-
-  void reset() {
-    if (ticked.isEmpty) return;
-    ticked.clear();
-    notifyListeners();
-  }
-}
