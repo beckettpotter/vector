@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+app/build/
+app/.dart_tool/
+last_check.txt
+.pio/
+bundles/
+.backups/

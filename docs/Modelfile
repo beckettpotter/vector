@@ -1,0 +1,8 @@
+FROM devstral-small-2
+
+# Memory: 32768 tokens is enough for one task file plus a few source files.
+# Lower to 16384 if your computer runs out of memory or gets very slow.
+PARAMETER num_ctx 32768
+
+# Low randomness: coding wants the same careful answer every time.
+PARAMETER temperature 0.15
