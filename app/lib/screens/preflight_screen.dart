@@ -3,24 +3,32 @@ import 'package:material_ui/material_ui.dart';
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
 import '../location.dart';
+import '../openrocket/projection_store.dart';
 import '../protocol/packet.dart';
 import '../checklist.dart';
 import '../settings.dart';
 import '../theme.dart';
 import '../time_display.dart';
+import 'projection_widgets.dart';
 
 class PreflightView extends StatelessWidget {
   final LinkController link;
   final AppSettings settings;
   final Checklist checklist;
   final DeviceLocation? location;
+  final Projections? projections;
   const PreflightView(
-      {super.key, required this.link, required this.settings, required this.checklist, this.location});
+      {super.key,
+      required this.link,
+      required this.settings,
+      required this.checklist,
+      this.location,
+      this.projections});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([link, settings, checklist, location]),
+      listenable: Listenable.merge([link, settings, checklist, location, projections]),
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final frame = link.monitor.status == LinkStatus.live ? link.monitor.latest : null;
@@ -29,6 +37,10 @@ class PreflightView extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             ChecklistSection(checklist: checklist, frame: frame),
+            if (projections != null) ...[
+              const SizedBox(height: 24),
+              ProjectionCard(projections: projections!, settings: settings),
+            ],
             const SizedBox(height: 24),
             Row(children: [
               Expanded(child: Text('Rocket profiles', style: text.headlineMedium)),

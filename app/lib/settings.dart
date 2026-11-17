@@ -39,6 +39,8 @@ class AppSettings extends ChangeNotifier {
       final p = await SharedPreferences.getInstance();
       s._prefs = p;
       s._useFeet = _read(() => p.getBool('useFeet'), false);
+      s._activeProjectionId = _read(() => p.getString('activeProjectionId'), '');
+      s._waiverCeilingM = _read(() => p.getDouble('waiverCeilingM'), null);
       s._useLocation = _read(() => p.getBool('useLocation'), false);
       s._timeZone = _read(() => p.getString('timeZone'), chicagoZone);
       s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
@@ -75,6 +77,27 @@ class AppSettings extends ChangeNotifier {
     if (v == _useFeet) return;
     _useFeet = v;
     _save((p) => p.setBool('useFeet', v));
+    notifyListeners();
+  }
+
+  /// The OpenRocket projection the next flight is compared with ('' = none).
+  String _activeProjectionId = '';
+  String get activeProjectionId => _activeProjectionId;
+  set activeProjectionId(String v) {
+    if (v == _activeProjectionId) return;
+    _activeProjectionId = v;
+    _save((p) => p.setString('activeProjectionId', v));
+    notifyListeners();
+  }
+
+  /// Optional waiver ceiling above the pad, in meters. Blank (null) by default;
+  /// when blank nothing warns.
+  double? _waiverCeilingM;
+  double? get waiverCeilingM => _waiverCeilingM;
+  set waiverCeilingM(double? v) {
+    if (v == _waiverCeilingM) return;
+    _waiverCeilingM = v;
+    _save((p) => v == null ? p.remove('waiverCeilingM') : p.setDouble('waiverCeilingM', v));
     notifyListeners();
   }
 

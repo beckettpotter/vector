@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'checklist.dart';
 import 'link/link_controller.dart';
 import 'location.dart';
+import 'openrocket/projection_store.dart';
 import 'protocol/packet.dart';
 import 'settings.dart';
 import 'storage/flight_store.dart';
@@ -20,6 +21,7 @@ class Services {
   final Recorder recorder;
   final Checklist checklist;
   final DeviceLocation location;
+  final Projections projections;
 
   Services(
       {required this.link,
@@ -27,9 +29,11 @@ class Services {
       required this.store,
       required this.recorder,
       Checklist? checklist,
-      DeviceLocation? location})
+      DeviceLocation? location,
+      Projections? projections})
       : checklist = checklist ?? Checklist(),
-        location = location ?? DeviceLocation(GeolocatorSource()) {
+        location = location ?? DeviceLocation(GeolocatorSource()),
+        projections = projections ?? Projections() {
     // "From my location" time zone, only while location is on.
     this.location.addListener(() {
       settings.locationTimeZone = this.location.isOn ? this.location.timeZone : null;
@@ -48,8 +52,19 @@ class Services {
   static Future<Services> create() async {
     final settings = await AppSettings.load();
     final checklist = await Checklist.load();
+    final flights = await flightsFolder();
+    final projections = Projections(
+      store: ProjectionStore(Directory('${flights.parent.path}${Platform.pathSeparator}projections')),
+      activeId: settings.activeProjectionId,
+      saveActive: (id) => settings.activeProjectionId = id,
+    );
+    await projections.load();
+    var lastRocket = settings.lastRocketName;
+    settings.addListener(() {
+      if (settings.lastRocketName != lastRocket) projections.rocketChosen(lastRocket = settings.lastRocketName);
+    });
     final link = LinkController()..address = settings.address;
-    final store = FlightStore(await flightsFolder());
+    final store = FlightStore(flights);
     final recorder = Recorder(
       store: store,
       link: link,
@@ -58,10 +73,19 @@ class Services {
         final base = defaultFlightName(rocketId, started, formatTime: settings.formatTime);
         return profile == null ? base : base.replaceFirst('Rocket $rocketId', profile.name);
       },
-      fillMeta: checklist.fillFlight,
+      fillMeta: (meta) {
+        checklist.fillFlight(meta);
+        meta.projection = projections.active?.projection;
+        meta.projectionOffsetS = projections.offsetS;
+      },
     );
-    final services =
-        Services(link: link, settings: settings, store: store, recorder: recorder, checklist: checklist);
+    final services = Services(
+        link: link,
+        settings: settings,
+        store: store,
+        recorder: recorder,
+        checklist: checklist,
+        projections: projections);
     services._watchLink();
     // Turned on before: start again without a prompt if still allowed.
     if (settings.useLocation) unawaited(services.location.start(ask: false));

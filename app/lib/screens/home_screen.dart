@@ -48,7 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (frames.isEmpty) return;
     Navigator.of(context).popUntil((r) => r.isFirst);
     setState(() => _tab = 1);
-    await widget.services.link.useSource(ReplayLink(frames, name: record.meta.name, speed: 5));
+    await widget.services.link.useSource(ReplayLink(frames,
+        name: record.meta.name,
+        speed: 5,
+        projection: record.meta.projection,
+        projectionOffsetS: record.meta.projectionOffsetS));
   }
 
   late final DetailActions _actions = DetailActions((context, record, frames) => [
@@ -75,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = widget.services;
     final link = s.link;
     final connect = ConnectBox(link: link);
-    final hud = HudPanel(link: link, settings: s.settings);
+    final hud = HudPanel(link: link, settings: s.settings, projections: s.projections);
 
     return Scaffold(
       appBar: AppBar(title: Text('Vector', style: text.headlineMedium?.copyWith(color: VxColors.accent))),
@@ -106,7 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: LayoutBuilder(builder: (context, c) {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
-                0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist, location: s.location),
+                0 => PreflightView(
+                    link: link,
+                    settings: s.settings,
+                    checklist: s.checklist,
+                    location: s.location,
+                    projections: s.projections),
                 2 => TrackView(link: link, location: s.location),
                 3 => RecoveryView(link: link, settings: s.settings, location: s.location),
                 4 => HistoryView(

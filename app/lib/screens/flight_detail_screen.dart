@@ -8,6 +8,7 @@ import '../storage/flight_store.dart';
 import '../theme.dart';
 import 'format.dart';
 import 'history_screen.dart';
+import 'projection_widgets.dart';
 
 /// Extra buttons on the detail screen (export and replay are added by later tasks).
 class DetailActions {
@@ -102,6 +103,14 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
                     style: text.titleLarge?.copyWith(color: VxColors.warning))
               else
                 _StatsGrid(stats),
+              if (widget.record.meta.projection != null) ...[
+                const SizedBox(height: 24),
+                ComparisonSection(
+                  projection: widget.record.meta.projection!,
+                  initialOffsetS: widget.record.meta.projectionOffsetS,
+                  packets: [for (final f in frames) f.packet],
+                ),
+              ],
               ..._checklist(text),
               const SizedBox(height: 24),
               Text('Altitude above pad (m)', style: text.titleLarge),
