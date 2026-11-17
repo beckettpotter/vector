@@ -15,7 +15,7 @@ The coding assistant updates this file after every task. Newest note last.
 - [x] 09 Export and replay
 - [ ] 10 Firmware: packet library check
 - [x] 11 Firmware: phase detector now; boards need a club review (Part A only)
-- [ ] 12 Polish and the launch-day checklist
+- [x] 12 Polish and the launch-day checklist
 
 ## Notes
 
@@ -32,3 +32,14 @@ The coding assistant updates this file after every task. Newest note last.
 - Task 09 done: CSV export (byte-identical to sample_flight.csv, also checked on a file exported from the running app), KML export (track, pad, landing), and replay of saved flights at 1x/5x/10x with play/pause and a scrub slider, through the same link monitor (replays are not recorded again). Exports go to Vector/exports/; phones and Mac open the share sheet, Linux shows the saved path (share_plus cannot share files on Linux). Test-only dev package: xml (to check the KML parses).
 - Task 10 NOT done: this cloud session cannot reach the PlatformIO registry, so `pio test -e native` must be run on Beckett's computer (see the commands in HANDOFF/README). Nothing in firmware/ changed for it.
 - Task 11 Part A done: `firmware/lib/phase_detector/` with 6 native tests in `firmware/test/test_phase/` (made-up flight with sequence and change times, pad jitter, low-altitude speed spike, noisy flight, never backwards, 5 s landing streak). They pass with a local stand-in for Unity; they still need a real `pio test -e native` run. Part B: waiting for club review (`docs/HARDWARE_DECISIONS.md`).
+- Task 12 done: settings saved across restarts (address, feet/meters, chosen rocket, rocket profiles), screen kept awake while connected, Pre-flight tab (checklist with live values, ticks clear at launch; rocket profiles used to name saved flights; units), friendlier empty and error messages, `docs/LAUNCH_DAY.md`, `docs/BUILD.md`. Network permissions added for Android, iOS and macOS builds (untested). Window title is now "Vector". The brief moved to `docs/BRIEF.md`; `README.md` is now a short project readme.
+
+## Waiting (decisions or things only Beckett can do)
+
+- Run it on the Fedora machine: `cd app && flutter run -d linux` with `python sim/simulate.py --speed 10` (only the cloud Linux build has been run so far).
+- Task 10: run `pio test -e native` in `firmware/` (PlatformIO was blocked in the cloud session). Expect 7 + 6 tests.
+- Map tiles: waiting for a decision on street vs satellite and the tile source and its terms.
+- Device GPS and compass in Recovery: waiting for a decision (permissions differ per platform).
+- Task 11 Part B (tracker and ground-node boards): waiting for club review, see `docs/HARDWARE_DECISIONS.md`.
+- Club field coordinates for the simulator (`--pad-lat/--pad-lon`); defaults are near Spaceport America.
+- Android, iPhone/iPad, macOS and Windows builds: untested (see `docs/BUILD.md`).

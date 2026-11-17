@@ -4,7 +4,7 @@
 
 It prints PASS / FAIL / SKIP for each part in plain language and saves the
 details to last_check.txt. If anything says FAIL, paste last_check.txt to
-Devstral (to fix it) or to Claude (if Devstral gets stuck).
+Claude Code.
 """
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def check_app() -> list[tuple[str, str, str]]:
 
 
 def check_firmware() -> tuple[str, str, str]:
-    name = "Firmware packet library (C++)"
+    name = "Firmware tests (C++: packet library and phase detector)"
     fw = ROOT / "firmware"
     if not (fw / "platformio.ini").exists():
         return ("SKIP", name, "Not created yet (task 10).")
@@ -89,7 +89,7 @@ def main() -> int:
     fails = [r for r in results if r[0] == "FAIL"]
     lines.append("")
     if fails:
-        lines.append(f"RESULT: {len(fails)} thing(s) need fixing. Paste this whole file to Devstral.")
+        lines.append(f"RESULT: {len(fails)} thing(s) need fixing. Paste this whole file to Claude Code.")
     else:
         lines.append("RESULT: everything that can be checked right now passes.")
     report = "\n".join(lines) + "\n"

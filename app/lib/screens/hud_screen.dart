@@ -55,10 +55,21 @@ class HudPanel extends StatelessWidget {
       builder: (context, _) {
         final frame = link.monitor.latest;
         if (frame == null) {
+          final text = Theme.of(context).textTheme;
           return Padding(
             padding: const EdgeInsets.all(24),
-            child: Center(
-                child: Text('Waiting for a rocket', style: Theme.of(context).textTheme.headlineMedium)),
+            child: Column(children: [
+              const Icon(Icons.rocket_launch, size: 72, color: VxColors.accent),
+              const SizedBox(height: 12),
+              Text('Waiting for a rocket', style: text.headlineMedium),
+              const SizedBox(height: 12),
+              Text(
+                '1. At the field, join the ground node\'s Wi-Fi. To practise, run the simulator.\n'
+                '2. Pick Ground node or Simulator in the Connection box.\n'
+                '3. Press Connect. Live numbers appear here within a second of each packet.',
+                style: text.bodyLarge?.copyWith(color: VxColors.textDim),
+              ),
+            ]),
           );
         }
         final p = frame.packet;

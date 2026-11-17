@@ -1,0 +1,67 @@
+# Vector: launch-day procedure
+
+One page. Print it and keep it in the range box.
+
+**Safety first.** The Vector tracker is passive telemetry. It must never be connected to ignition,
+ejection, deployment or recovery electronics. The RSO's word overrides anything on this page.
+
+## Bring
+
+- Ground node (LoRa receiver) with its antenna, and a USB power bank (charged) plus cable
+- The tracker, its battery (charged), and its antenna, installed in a fiberglass or plastic section (never inside carbon fiber or metal)
+- One or more devices with Vector installed (phone, tablet, laptop), charged, plus chargers
+- This sheet, and the rocket's details for its Vector profile (name, motor, mass, tracker id)
+
+## Set up at the field
+
+1. Place the ground node with a clear view of the pad and the downrange area, antenna vertical, as high as practical.
+2. Power the ground node from the power bank. Wait for it to create its Wi-Fi network.
+3. On each device, join the ground node's Wi-Fi. **Phones may warn "no internet". That is expected.** Choose
+   to stay connected (Android: "Keep Wi-Fi connection"; iPhone: allow Vector to find devices on the local network).
+4. Open Vector. In **Connection**, tap **Ground node** (address `ws://192.168.4.1:81`), then **Connect**.
+5. In **Pre-flight**, pick or add the rocket profile, so its flight is saved under its name.
+
+## Pre-flight checklist (in the app's Pre-flight tab)
+
+- [ ] **Tracker armed**: the app shows ARMED.
+- [ ] **GPS fix on the pad**: 3D fix, ideally 8 or more satellites. Wait for it. Without a pad fix there is no track.
+- [ ] **Battery above 3.7 V**: shown in green. Below that, swap or charge before flying.
+- [ ] **Signal check**: RSSI and SNR update every second. Walk the rocket to the pad and check it still updates.
+- [ ] **Club RSO approval**: the RSO has seen that the tracker is not connected to any recovery or ignition electronics.
+
+Ticks clear automatically when the rocket launches.
+
+## During the flight
+
+- The **HUD** shows altitude, max altitude, vertical speed, phase, GPS, battery, signal and time since the last packet.
+- Expect **NO GPS FIX** during boost. The GPS usually comes back in coast. The track shows a dashed line across the gap.
+- The flight is **saved automatically** from launch until 15 s after landing.
+
+## What the warnings mean
+
+| You see | It means | Do this |
+| --- | --- | --- |
+| Amber **STALE** banner, numbers grey "last known" | No packet for 5 s | Keep watching. Common near apogee or at long range. Point the ground node antenna at the rocket. |
+| Red **LOST** banner | No packet for 30 s | Use the last known position in **Recovery**. Walk toward it; the signal often returns when you get closer or higher. |
+| **NO GPS FIX** | Tracker has no position right now | Normal during boost. On the pad, wait before launching. |
+| Battery in amber or red, LOW BATTERY | Tracker battery is low | Do not fly until it is charged or swapped. |
+| "Cannot reach it, retrying" | The device cannot reach the ground node | Check the device is on the ground node's Wi-Fi (not cellular), the ground node is powered, and the address is `ws://192.168.4.1:81`. |
+| "Connected, but no packets yet" | Ground node is fine, tracker not heard | Check the tracker is powered and armed, and is on the club's agreed radio settings. |
+
+## Recovery
+
+1. After landing, open **Recovery**. It shows the distance and direction from **your position** to the rocket's last known fix.
+2. Your position starts as the pad. If you have moved, type your current latitude and longitude (device GPS is not used yet).
+3. The arrow is **north-up** (there is no compass yet): face north first, then walk along the arrow.
+4. Tap **Copy coordinates** to paste the rocket's position into a maps app.
+5. Fix age tells you how old the position is. If it is old, the rocket may have moved, for example dragged by the parachute.
+
+## After the flight
+
+- **History** lists every saved flight with apogee. Open one for stats, plots, **Export CSV** (spreadsheet),
+  **Export KML** (Google Earth) and **Replay**.
+- Flight files are plain text in `Documents/Vector/flights/` on each device that was connected.
+
+## Practise at home
+
+Run `python sim/simulate.py --speed 10` on a computer, choose **Simulator** in Vector, and press **Connect**.

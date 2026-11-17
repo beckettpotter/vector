@@ -10,6 +10,7 @@ import 'export_actions.dart';
 import 'flight_detail_screen.dart';
 import 'history_screen.dart';
 import 'hud_screen.dart';
+import 'preflight_screen.dart';
 import 'recovery_screen.dart';
 import 'replay_bar.dart';
 import 'track_screen.dart';
@@ -23,12 +24,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _tab = 0;
+  int _tab = 1; // HUD
 
   Future<void> _replay(FlightRecord record, List<GroundFrame> frames) async {
     if (frames.isEmpty) return;
     Navigator.of(context).popUntil((r) => r.isFirst);
-    setState(() => _tab = 0);
+    setState(() => _tab = 1);
     await widget.services.link.useSource(ReplayLink(frames, name: record.meta.name, speed: 5));
   }
 
@@ -64,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
+          NavigationDestination(icon: Icon(Icons.checklist), label: 'Pre-flight'),
           NavigationDestination(icon: Icon(Icons.speed), label: 'HUD'),
           NavigationDestination(icon: Icon(Icons.timeline), label: 'Track'),
           NavigationDestination(icon: Icon(Icons.explore), label: 'Recovery'),
@@ -86,9 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: LayoutBuilder(builder: (context, c) {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
-                1 => TrackView(link: link),
-                2 => RecoveryView(link: link, settings: s.settings),
-                3 => HistoryView(store: s.store, recorder: s.recorder, actions: _actions, onReplay: _replay),
+                0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist),
+                2 => TrackView(link: link),
+                3 => RecoveryView(link: link, settings: s.settings),
+                4 => HistoryView(store: s.store, recorder: s.recorder, actions: _actions, onReplay: _replay),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

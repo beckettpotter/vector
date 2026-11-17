@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'link/link_controller.dart';
+import 'protocol/packet.dart';
 import 'settings.dart';
 import 'storage/flight_store.dart';
 import 'storage/recorder.dart';
@@ -13,13 +15,47 @@ class Services {
   final AppSettings settings;
   final FlightStore store;
   final Recorder recorder;
-  Services({required this.link, required this.settings, required this.store, required this.recorder});
+  final Checklist checklist;
+
+  Services({required this.link, required this.settings, required this.store, required this.recorder, Checklist? checklist})
+      : checklist = checklist ?? Checklist() {
+    // Checklist ticks reset at each launch and each new tracker session.
+    link.frameListeners.add((frame, newSession) {
+      if (newSession || frame.packet.phase == Phase.boost) this.checklist.reset();
+    });
+  }
 
   static Future<Services> create() async {
-    final link = LinkController();
-    final settings = AppSettings();
+    final settings = await AppSettings.load();
+    final link = LinkController()..address = settings.address;
     final store = FlightStore(await flightsFolder());
-    return Services(link: link, settings: settings, store: store, recorder: Recorder(store: store, link: link));
+    final recorder = Recorder(
+      store: store,
+      link: link,
+      nameFor: (rocketId, started) {
+        final profile = settings.profileFor(rocketId);
+        final base = defaultFlightName(rocketId, started);
+        return profile == null ? base : base.replaceFirst('Rocket $rocketId', profile.name);
+      },
+    );
+    final services = Services(link: link, settings: settings, store: store, recorder: recorder);
+    services._watchLink();
+    return services;
+  }
+
+  bool _awake = false;
+
+  void _watchLink() {
+    link.addListener(() {
+      // Remember the address that was last used to connect.
+      if (link.isActive && link.source?.isReplay == false) settings.address = link.address;
+      // Keep the screen on while connected so the HUD stays visible at the field.
+      final want = link.isActive;
+      if (want != _awake) {
+        _awake = want;
+        (want ? WakelockPlus.enable() : WakelockPlus.disable()).catchError((_) {});
+      }
+    });
   }
 }
 

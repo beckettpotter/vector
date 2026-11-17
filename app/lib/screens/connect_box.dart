@@ -87,6 +87,11 @@ class _ConnectBoxState extends State<ConnectBox> {
                   ActionChip(
                       label: const Text('Ground node'), onPressed: active ? null : () => _pick(groundNodeAddress)),
                 ]),
+                Text(
+                  'Simulator: a practice flight from this computer. Ground node: the real receiver at the '
+                  'field (join its Wi-Fi first; phones may warn "no internet", that is expected).',
+                  style: text.bodyMedium?.copyWith(color: VxColors.textDim),
+                ),
                 const SizedBox(height: 12),
                 FilledButton(
                   key: const Key('connect'),

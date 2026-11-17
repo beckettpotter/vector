@@ -1,5 +1,8 @@
 # Setup
 
+> The build moved to Claude Code. Steps 3 and 4 (Ollama, Devstral, Cline) are optional now; you only need
+> Python (step 1), Flutter (step 2) and, for firmware tests, PlatformIO (step 5).
+
 Do these once. Use the computer you will build on (a Mac, Windows PC or Linux machine).
 If a step fails, copy the exact error text to Claude.
 
