@@ -1,16 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../link/link_controller.dart';
-import '../settings.dart';
+import '../services.dart';
 import '../theme.dart';
 import 'connect_box.dart';
+import 'history_screen.dart';
 import 'hud_screen.dart';
 import 'track_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final LinkController link;
-  final AppSettings settings;
-  const HomeScreen({super.key, required this.link, required this.settings});
+  final Services services;
+  const HomeScreen({super.key, required this.services});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -22,9 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final link = widget.link;
+    final s = widget.services;
+    final link = s.link;
     final connect = ConnectBox(link: link);
-    final hud = HudPanel(link: link, settings: widget.settings);
+    final hud = HudPanel(link: link, settings: s.settings);
 
     return Scaffold(
       appBar: AppBar(title: Text('Vector', style: text.headlineMedium?.copyWith(color: VxColors.accent))),
@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.speed), label: 'HUD'),
           NavigationDestination(icon: Icon(Icons.timeline), label: 'Track'),
+          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
         ],
       ),
       body: Column(
@@ -44,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
                 1 => TrackView(link: link),
+                2 => HistoryView(store: s.store, recorder: s.recorder),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

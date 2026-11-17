@@ -10,7 +10,7 @@ The coding assistant updates this file after every task. Newest note last.
 - [x] 04 Connect to the simulator
 - [x] 05 Live instrument panel (HUD)
 - [x] 06 Track plot (map tiles later)
-- [ ] 07 Flight recording and history
+- [x] 07 Flight recording and history
 - [ ] 08 Recovery view
 - [ ] 09 Export and replay
 - [ ] 10 Firmware: packet library check
@@ -27,3 +27,4 @@ The coding assistant updates this file after every task. Newest note last.
 - Task 04 done: WebSocket link with 1/2/5 s reconnect, link monitor (lost, stale 5 s, lost 30 s, new-session rules) with fake-clock tests, and a Connect box. Simulator and Ground node quick-pick buttons included.
 - Task 05 done: HUD with STALE/LOST banner, 'last known' greying, feet switch. Verified in the Linux app against the simulator (cloud session, virtual screen): 178 frames, 0 lost, max 948.5 m, all six phases, STALE then LOST after the stream ends.
 - Task 06 done: offline track plot (pad, 3D-fix path, dashed GPS gap, phase-coloured dot, rings, north arrow, last-known label) and HUD/Track tabs. Rings are drawn as short segments because big stroked circles rendered as grey boxes with software OpenGL. Map tiles: waiting for a decision on tile source and terms (question for Beckett).
+- Task 07 done: automatic recording to plain .hex + .json files, History list and detail (stats, altitude and speed plots, rename, delete with confirmation). Recording starts at the first non-pad packet and keeps up to 30 pad packets from before it (so an idle tracker on the pad is not saved). Files live in Documents/Vector/flights (falls back to ~/.local/share/club.vector.vector/Vector/flights). Verified in the Linux app: simulated flight saved with apogee 948.5 m and all stats matching.

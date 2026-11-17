@@ -1,18 +1,17 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'link/link_controller.dart';
 import 'screens/home_screen.dart';
-import 'settings.dart';
+import 'services.dart';
 import 'theme.dart';
 
-void main() {
-  runApp(VectorApp(link: LinkController(), settings: AppSettings()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(VectorApp(services: await Services.create()));
 }
 
 class VectorApp extends StatelessWidget {
-  final LinkController link;
-  final AppSettings settings;
-  const VectorApp({super.key, required this.link, required this.settings});
+  final Services services;
+  const VectorApp({super.key, required this.services});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +19,7 @@ class VectorApp extends StatelessWidget {
       title: 'Vector',
       debugShowCheckedModeBanner: false,
       theme: buildVectorTheme(),
-      home: HomeScreen(link: link, settings: settings),
+      home: HomeScreen(services: services),
     );
   }
 }

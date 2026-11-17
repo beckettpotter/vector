@@ -51,9 +51,9 @@ Packet makePacket({
 GroundFrame makeFrame({int rssi = -60, int snr = 10, int rocketId = 1, int seq = 0, int timeMs = 1000,
         Phase phase = Phase.pad, int baroAltCm = 0, int vspeedCms = 0, int fixType = fix3d, int sats = 10,
         int flags = 1, int batteryMv = 4000}) =>
-    GroundFrame(
+    decodeGroundFrame(encodeFrame(
         makePacket(rocketId: rocketId, seq: seq, timeMs: timeMs, phase: phase, baroAltCm: baroAltCm,
             vspeedCms: vspeedCms, fixType: fixType, sats: sats, flags: flags, batteryMv: batteryMv),
-        rssi, snr);
+        rssi: rssi, snr: snr));
 
 List<GroundFrame> sampleFlight() => parseHexFlight(File('../protocol/sample_flight.hex').readAsStringSync());

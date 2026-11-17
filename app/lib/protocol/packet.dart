@@ -71,7 +71,10 @@ class GroundFrame {
   final Packet packet;
   final int rssiDbm;
   final int snrDb;
-  const GroundFrame(this.packet, this.rssiDbm, this.snrDb);
+
+  /// The 36 bytes as received, kept so recordings are byte-exact.
+  final Uint8List? raw;
+  const GroundFrame(this.packet, this.rssiDbm, this.snrDb, [this.raw]);
 }
 
 /// 34 bytes -> Packet. Checks in the spec's order: length, CRC, version, phase.
@@ -113,7 +116,7 @@ GroundFrame decodeGroundFrame(Uint8List data) {
   }
   final packet = decodePacket(Uint8List.sublistView(data, 0, packetSize));
   final b = ByteData.sublistView(data);
-  return GroundFrame(packet, b.getInt8(34), b.getInt8(35));
+  return GroundFrame(packet, b.getInt8(34), b.getInt8(35), Uint8List.fromList(data));
 }
 
 Uint8List hexToBytes(String hex) {
