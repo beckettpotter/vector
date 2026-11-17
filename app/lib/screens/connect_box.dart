@@ -98,7 +98,11 @@ class _ConnectBoxState extends State<ConnectBox> {
                   child: Text(active ? 'Disconnect' : 'Connect'),
                 ),
                 const SizedBox(height: 12),
-                Text(connectionLabel(link.connection), style: text.bodyLarge?.copyWith(color: stateColor)),
+                Text(
+                    link.connection == LinkConnection.retrying && m.frameCount > 0
+                        ? 'Connection dropped, reconnecting...'
+                        : connectionLabel(link.connection),
+                    style: text.bodyLarge?.copyWith(color: stateColor)),
                 if (link.connection == LinkConnection.retrying && link.lastError != null)
                   Text(_hint(link.address), style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
                 if (link.connection == LinkConnection.connected && m.frameCount == 0)

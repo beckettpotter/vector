@@ -5,6 +5,7 @@ import '../theme.dart';
 import 'connect_box.dart';
 import 'history_screen.dart';
 import 'hud_screen.dart';
+import 'recovery_screen.dart';
 import 'track_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.speed), label: 'HUD'),
           NavigationDestination(icon: Icon(Icons.timeline), label: 'Track'),
+          NavigationDestination(icon: Icon(Icons.explore), label: 'Recovery'),
           NavigationDestination(icon: Icon(Icons.history), label: 'History'),
         ],
       ),
@@ -45,7 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
                 1 => TrackView(link: link),
-                2 => HistoryView(store: s.store, recorder: s.recorder),
+                2 => RecoveryView(link: link, settings: s.settings),
+                3 => HistoryView(store: s.store, recorder: s.recorder),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

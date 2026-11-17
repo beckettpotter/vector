@@ -9,4 +9,8 @@ class AppSettings extends ChangeNotifier {
     _useFeet = v;
     notifyListeners();
   }
+
+  /// The recovery viewer's typed position (device GPS is not used yet).
+  double? viewerLat;
+  double? viewerLon;
 }
