@@ -49,10 +49,22 @@ class LinkController extends ChangeNotifier {
     await useSource(WsLink(uri));
   }
 
+  /// The STALE/LOST warning was dismissed for the outage that followed the
+  /// frame received at this clock time. The next frame changes that time, so
+  /// a later outage shows the warning again.
+  int? _dismissedAfterFrameAt;
+  bool get warningDismissed =>
+      _dismissedAfterFrameAt != null && _dismissedAfterFrameAt == monitor.lastFrameAtMs;
+  void dismissWarning() {
+    _dismissedAfterFrameAt = monitor.lastFrameAtMs;
+    notifyListeners();
+  }
+
   /// Start reading from any source (used by connect() and by replay).
   Future<void> useSource(FrameSource source) async {
     await disconnect();
     monitor.reset();
+    _dismissedAfterFrameAt = null;
     sessionFrames.clear();
     maxAltM = 0;
     _source = source;

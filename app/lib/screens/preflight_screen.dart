@@ -96,6 +96,19 @@ class PreflightView extends StatelessWidget {
               value: settings.useFeet,
               onChanged: (v) => settings.useFeet = v,
             ),
+            const SizedBox(height: 24),
+            Text('Warnings', style: text.headlineMedium),
+            SwitchListTile(
+              key: const Key('autoHideWarning'),
+              title: Text('Auto-hide the warning after 20 s', style: text.titleLarge),
+              subtitle: Text(
+                'The STALE or LOST banner hides by itself. A small "No link" timer stays on screen and old '
+                'numbers stay greyed as "last known". You can also tap Dismiss on the banner after 20 s.',
+                style: text.bodyMedium?.copyWith(color: VxColors.textDim),
+              ),
+              value: settings.autoHideWarning,
+              onChanged: (v) => settings.autoHideWarning = v,
+            ),
           ],
         );
       },

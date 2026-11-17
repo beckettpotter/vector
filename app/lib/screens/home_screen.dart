@@ -75,12 +75,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           ListenableBuilder(
-            listenable: link,
+            listenable: Listenable.merge([link, s.settings]),
             builder: (context, _) {
               final src = link.source;
               return Column(children: [
                 if (src is ReplayLink) ReplayBar(link: link, replay: src),
-                StaleBanner(link: link),
+                StaleBanner(link: link, settings: s.settings),
               ]);
             },
           ),

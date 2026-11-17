@@ -13,9 +13,42 @@ The coding assistant updates this file after every task. Newest note last.
 - [x] 07 Flight recording and history
 - [x] 08 Recovery view
 - [x] 09 Export and replay
-- [ ] 10 Firmware: packet library check
+- [x] 10 Firmware: packet library check
 - [x] 11 Firmware: phase detector now; boards need a club review (Part A only)
 - [x] 12 Polish and the launch-day checklist
+
+### Version 2 (plan: `docs/V2_PLAN.md`; build order e, d, f, c, a, b; never ahead of the MVP flight test)
+
+- [x] 13 (v2 e) Dismissible stale-link warning.
+  Done when: after 20 s without a packet the STALE/LOST banner has a Dismiss button and an "Auto-hide the warning
+  after 20 s" setting (off by default); when hidden, numbers stay greyed as "last known" and a "No link 0:42" chip
+  stays visible; the banner comes back on the next outage; stale 5 s and lost 30 s unchanged; tests cover all of it.
+- [ ] 14 (v2 d) Editable pre-flight checklist with notes.
+  Done when: items can be added, edited, deleted (stretch: reordered) and reset to defaults; each item has an optional
+  note and there is one general launch notes box; ticks reset each launch while items and notes persist; the checklist
+  state and notes are saved in the flight's `.json` and shown in History; broken storage falls back to the defaults.
+- [ ] 15 (v2 f) Local time display.
+  Done when: a "Time zone" setting offers Chicago (default, IANA `America/Chicago`, shown as "Chicago time"), this
+  device's zone, from my location (only when location is on) and any zone from a list; History, flight start, notes and
+  checklist show local time; everything stored stays UTC; CSV bytes and KML (UTC) are unchanged; tests cover daylight
+  saving.
+- [ ] 16 (v2 c) Optional "Use my location" on every device.
+  Done when: a per-device toggle, off by default, shows Vector's own plain explanation before the system prompt; it is
+  used only while the app is open, never stored or sent; a refusal shows one calm line and typed entry keeps working;
+  a device without location shows "This device can't provide a location"; the Recovery view can use it; Beckett gets
+  a plain list of which devices work and how accurately.
+- [ ] 17 (v2 a) OpenRocket import and projected-vs-actual comparison.
+  Done when: the CSV parser follows every rule in the plan and a test on `app/test/fixtures/openrocket_real.csv`
+  matches the plan's table (apogee 852.6 m at 10.841 s, and the rest); the Pre-flight Projection card (with the
+  optional waiver ceiling and the no-recovery-device and stability wording), the live HUD comparison and chart, and
+  the after-flight overlay plots, table, RMS and phase errors and summary all work offline; the projection is saved in
+  the flight `.json`; the synthetic, separator, NaN, BOM, header and missing-column tests pass.
+- [ ] 18 (v2 b) Offline satellite map behind the track plot (USGS, no key, no account).
+  Done when: Settings can download a map pack for a field (default Hearne airport, 2/5/10 km, zoom 12 to 16) with
+  a size estimate, progress, cancel and delete, politely (2 to 4 requests at once); the Track view draws the stored
+  tiles with the USGS credit and imagery dates, makes no network calls at the field, and falls back to the plot with
+  one calm line; the honesty note is in Settings; tile-math, counting, storage, fallback and no-network tests pass;
+  one real tile request is noted here.
 
 ## Notes
 
@@ -31,13 +64,18 @@ The coding assistant updates this file after every task. Newest note last.
 - Task 08 done: Recovery tab with distance, bearing (degrees + 16-point letters), north-up arrow, copyable coordinates, fix age, typed viewer position pre-filled with the pad, and a ROCKET STILL FLYING label. Verified in the Linux app: 620 m, 76 deg ENE after the simulated landing. Device GPS and compass: waiting for a decision (platform permissions).
 - Task 09 done: CSV export (byte-identical to sample_flight.csv, also checked on a file exported from the running app), KML export (track, pad, landing), and replay of saved flights at 1x/5x/10x with play/pause and a scrub slider, through the same link monitor (replays are not recorded again). Exports go to Vector/exports/; phones and Mac open the share sheet, Linux shows the saved path (share_plus cannot share files on Linux). Test-only dev package: xml (to check the KML parses).
 - Task 10 NOT done: this cloud session cannot reach the PlatformIO registry, so `pio test -e native` must be run on Beckett's computer (see the commands in HANDOFF/README). Nothing in firmware/ changed for it.
+- 2026-11-17 (Claude Code on Beckett's Fedora machine): Task 10 done. Installed PlatformIO 6.2.0 with `pip install --user platformio`; `pio test -e native` passed 13 of 13 (7 packet library, 6 phase detector) with the real Unity 2.6.1. `python scripts/check.py` now checks the firmware too when `~/.local/bin` is on PATH. `flutter build linux` also succeeds on this machine.
 - Task 11 Part A done: `firmware/lib/phase_detector/` with 6 native tests in `firmware/test/test_phase/` (made-up flight with sequence and change times, pad jitter, low-altitude speed spike, noisy flight, never backwards, 5 s landing streak). They pass with a local stand-in for Unity; they still need a real `pio test -e native` run. Part B: waiting for club review (`docs/HARDWARE_DECISIONS.md`).
 - Task 12 done: settings saved across restarts (address, feet/meters, chosen rocket, rocket profiles), screen kept awake while connected, Pre-flight tab (checklist with live values, ticks clear at launch; rocket profiles used to name saved flights; units), friendlier empty and error messages, `docs/LAUNCH_DAY.md`, `docs/BUILD.md`. Network permissions added for Android, iOS and macOS builds (untested). Window title is now "Vector". The brief moved to `docs/BRIEF.md`; `README.md` is now a short project readme.
 
+- v2 plan added (`docs/V2_PLAN.md`) as tasks 13 to 18. Beckett's OpenRocket export and `.ork` are now `app/test/fixtures/openrocket_real.csv` and `app/test/fixtures/journey75.ork` (not used by any test yet; task 17).
+- Task 13 (v2 e) done: after 20 s without a packet the banner shows Dismiss; Pre-flight has "Auto-hide the warning after 20 s" (off by default, saved). Dismissed or auto-hidden, a small "No link m:ss" chip stays (amber when stale, red when lost) and tiles keep "last known". The dismissal belongs to that one outage: the next packet re-arms the banner. "20 s" is counted from the last packet, the same number the banner shows. 3 new widget/settings tests. Not yet looked at by eye in the running app.
+
 ## Waiting (decisions or things only Beckett can do)
 
-- Run it on the Fedora machine: `cd app && flutter run -d linux` with `python sim/simulate.py --speed 10` (only the cloud Linux build has been run so far).
-- Task 10: run `pio test -e native` in `firmware/` (PlatformIO was blocked in the cloud session). Expect 7 + 6 tests.
+- Try it on the Fedora machine with your own eyes: `python sim/simulate.py --speed 10` in one terminal, `cd app && flutter run -d linux` in another (the app builds on this machine; nobody has clicked through it here yet).
+- MVP before v2: the hardware order (Task 11 Part B) and the first real flight test.
+- v2 open questions (one at a time, only when needed): exact launch spot on Hearne airport; a re-exported OpenRocket CSV with motor, recovery device and Hearne as launch site; the first flight test date.
 - Map tiles: waiting for a decision on street vs satellite and the tile source and its terms.
 - Device GPS and compass in Recovery: waiting for a decision (permissions differ per platform).
 - Task 11 Part B (tracker and ground-node boards): waiting for club review, see `docs/HARDWARE_DECISIONS.md`.
