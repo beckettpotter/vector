@@ -41,6 +41,13 @@ dependencies:
   share_plus: ^13.3.1
   shared_preferences: ^2.5.6
   wakelock_plus: ^1.8.2
+  timezone: ^0.11.2
+  geolocator: ^14.0.1
+  lat_lng_to_timezone: ^0.2.0
+  file_picker: 13.3.2
+  flutter_map: ^8.3.2
+  latlong2: ^0.9.1
+  http: ^1.5.0
 
 dev_dependencies:
   flutter_test:

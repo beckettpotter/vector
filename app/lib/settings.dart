@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'link/link_controller.dart' show simulatorAddress;
+import 'time_display.dart';
 
 class RocketProfile {
   String name;
@@ -38,6 +39,11 @@ class AppSettings extends ChangeNotifier {
       final p = await SharedPreferences.getInstance();
       s._prefs = p;
       s._useFeet = _read(() => p.getBool('useFeet'), false);
+      s._activeProjectionId = _read(() => p.getString('activeProjectionId'), '');
+      s._waiverCeilingM = _read(() => p.getDouble('waiverCeilingM'), null);
+      s._showMap = _read(() => p.getBool('showMap'), true);
+      s._useLocation = _read(() => p.getBool('useLocation'), false);
+      s._timeZone = _read(() => p.getString('timeZone'), chicagoZone);
       s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
       s._address = _read(() => p.getString('address'), simulatorAddress);
       s._lastRocketName = _read(() => p.getString('lastRocketName'), '');
@@ -74,6 +80,78 @@ class AppSettings extends ChangeNotifier {
     _save((p) => p.setBool('useFeet', v));
     notifyListeners();
   }
+
+  /// The OpenRocket projection the next flight is compared with ('' = none).
+  String _activeProjectionId = '';
+  String get activeProjectionId => _activeProjectionId;
+  set activeProjectionId(String v) {
+    if (v == _activeProjectionId) return;
+    _activeProjectionId = v;
+    _save((p) => p.setString('activeProjectionId', v));
+    notifyListeners();
+  }
+
+  /// Optional waiver ceiling above the pad, in meters. Blank (null) by default;
+  /// when blank nothing warns.
+  double? _waiverCeilingM;
+  double? get waiverCeilingM => _waiverCeilingM;
+  set waiverCeilingM(double? v) {
+    if (v == _waiverCeilingM) return;
+    _waiverCeilingM = v;
+    _save((p) => v == null ? p.remove('waiverCeilingM') : p.setDouble('waiverCeilingM', v));
+    notifyListeners();
+  }
+
+  /// Track tab: satellite map (when a map is downloaded for the area) or the plot.
+  bool _showMap = true;
+  bool get showMap => _showMap;
+  set showMap(bool v) {
+    if (v == _showMap) return;
+    _showMap = v;
+    _save((p) => p.setBool('showMap', v));
+    notifyListeners();
+  }
+
+  /// "Use my location" on this device. Off by default. Only the choice is
+  /// saved; positions never are.
+  bool _useLocation = false;
+  bool get useLocation => _useLocation;
+  set useLocation(bool v) {
+    if (v == _useLocation) return;
+    _useLocation = v;
+    _save((p) => p.setBool('useLocation', v));
+    notifyListeners();
+  }
+
+  /// How clock times are shown: an IANA zone name (default Chicago),
+  /// [deviceZoneSetting] or [locationZoneSetting]. Display only; stored times stay UTC.
+  String _timeZone = chicagoZone;
+  String get timeZone => _timeZone;
+  set timeZone(String v) {
+    if (v == _timeZone) return;
+    _timeZone = v;
+    _save((p) => p.setString('timeZone', v));
+    notifyListeners();
+  }
+
+  /// The zone found from this device's location, while location is on. Not saved.
+  String? _locationTimeZone;
+  String? get locationTimeZone => _locationTimeZone;
+  set locationTimeZone(String? v) {
+    if (v == _locationTimeZone) return;
+    _locationTimeZone = v;
+    notifyListeners();
+  }
+
+  /// The zone actually used. "From my location" with no location yet uses
+  /// this device's own zone.
+  String get displayZone {
+    if (_timeZone == locationZoneSetting) return _locationTimeZone ?? deviceZoneSetting;
+    if (_timeZone == deviceZoneSetting || isKnownZone(_timeZone)) return _timeZone;
+    return chicagoZone;
+  }
+
+  String formatTime(DateTime t) => formatClock(t, displayZone);
 
   /// Hide the STALE/LOST banner by itself once it can be dismissed (20 s).
   bool _autoHideWarning = false;
@@ -122,30 +200,7 @@ class AppSettings extends ChangeNotifier {
     return null;
   }
 
-  /// The recovery viewer's typed position (device GPS is not used yet). Not saved.
+  /// The recovery viewer's typed position. Not saved.
   double? viewerLat;
   double? viewerLon;
-}
-
-/// Pre-flight checklist ticks. Reset at each launch.
-class Checklist extends ChangeNotifier {
-  static const items = [
-    'Tracker armed',
-    'GPS fix on the pad',
-    'Battery above 3.7 V',
-    'Signal check',
-    'Club RSO approval',
-  ];
-  final Set<String> ticked = {};
-
-  void toggle(String item) {
-    ticked.contains(item) ? ticked.remove(item) : ticked.add(item);
-    notifyListeners();
-  }
-
-  void reset() {
-    if (ticked.isEmpty) return;
-    ticked.clear();
-    notifyListeners();
-  }
 }

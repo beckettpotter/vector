@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Vector talks to the ground node over plain ws:// on its own Wi-Fi (no internet). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- "Use my location" (off by default, only while the app is open; never background). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Vector"
         android:usesCleartextTraffic="true"

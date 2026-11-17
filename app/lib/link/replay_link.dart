@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../openrocket/projection.dart';
 import '../protocol/packet.dart';
 import 'frame_source.dart';
 
@@ -10,7 +11,11 @@ import 'frame_source.dart';
 class ReplayLink extends ChangeNotifier implements FrameSource {
   final List<GroundFrame> recorded;
   final String name;
-  ReplayLink(this.recorded, {required this.name, this.speed = 1});
+
+  /// The prediction saved with the flight, so Replay compares against it.
+  final Projection? projection;
+  final double projectionOffsetS;
+  ReplayLink(this.recorded, {required this.name, this.speed = 1, this.projection, this.projectionOffsetS = 0});
 
   static const List<double> speeds = [1, 5, 10];
 

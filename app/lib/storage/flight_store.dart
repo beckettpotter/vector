@@ -1,12 +1,27 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../openrocket/projection.dart';
 import '../protocol/packet.dart';
 
 /// A flight is two plain files in the flights folder:
 ///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.hex`   one ground frame as hex per line
-///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.json`  {name, rocketId, startedAtUtc, padLat, padLon, notes}
+///   `flight_<rocketId>_<yyyyMMdd_HHmmss>.json`  {name, rocketId, startedAtUtc, padLat, padLon, notes,
+///                                               checklist, launchNotes, projection, projectionOffsetS}
 /// No database, so a flight can be copied, emailed or opened in any editor.
+/// One pre-flight checklist line as it was at launch.
+class CheckedItem {
+  final String text;
+  final bool ticked;
+  final String note;
+  const CheckedItem({required this.text, required this.ticked, this.note = ''});
+
+  Map<String, dynamic> toJson() => {'text': text, 'ticked': ticked, 'note': note};
+
+  factory CheckedItem.fromJson(Map<String, dynamic> j) => CheckedItem(
+      text: j['text'] as String? ?? '', ticked: j['ticked'] as bool? ?? false, note: j['note'] as String? ?? '');
+}
+
 class FlightMeta {
   String name;
   final int rocketId;
@@ -15,6 +30,16 @@ class FlightMeta {
   double? padLon;
   String notes;
 
+  /// The pre-flight checklist at launch, or null for flights saved before
+  /// checklists were recorded.
+  List<CheckedItem>? checklist;
+  String launchNotes;
+
+  /// The OpenRocket prediction this flight was flown against, kept inside the
+  /// flight file so the comparison still works if the import is deleted.
+  Projection? projection;
+  double projectionOffsetS;
+
   FlightMeta({
     required this.name,
     required this.rocketId,
@@ -22,6 +47,10 @@ class FlightMeta {
     this.padLat,
     this.padLon,
     this.notes = '',
+    this.checklist,
+    this.launchNotes = '',
+    this.projection,
+    this.projectionOffsetS = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +60,10 @@ class FlightMeta {
         'padLat': padLat,
         'padLon': padLon,
         'notes': notes,
+        if (checklist != null) 'checklist': [for (final c in checklist!) c.toJson()],
+        if (launchNotes.isNotEmpty) 'launchNotes': launchNotes,
+        if (projection != null) 'projection': projection!.toJson(),
+        if (projection != null) 'projectionOffsetS': projectionOffsetS,
       };
 
   factory FlightMeta.fromJson(Map<String, dynamic> j) => FlightMeta(
@@ -40,7 +73,29 @@ class FlightMeta {
         padLat: (j['padLat'] as num?)?.toDouble(),
         padLon: (j['padLon'] as num?)?.toDouble(),
         notes: j['notes'] as String? ?? '',
+        checklist: _readChecklist(j['checklist']),
+        launchNotes: j['launchNotes'] as String? ?? '',
+        projection: _readProjection(j['projection']),
+        projectionOffsetS: (j['projectionOffsetS'] as num?)?.toDouble() ?? 0,
       );
+
+  static Projection? _readProjection(Object? v) {
+    if (v is! Map<String, dynamic>) return null;
+    try {
+      return Projection.fromJson(v);
+    } catch (_) {
+      return null; // a damaged projection never hides the flight
+    }
+  }
+
+  static List<CheckedItem>? _readChecklist(Object? v) {
+    if (v is! List) return null;
+    try {
+      return [for (final e in v) CheckedItem.fromJson(e as Map<String, dynamic>)];
+    } catch (_) {
+      return null; // a damaged checklist never hides the flight
+    }
+  }
 }
 
 class FlightRecord {

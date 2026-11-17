@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'checklist.dart';
 import 'link/link_controller.dart';
+import 'location.dart';
+import 'maps/map_pack.dart';
+import 'maps/maps.dart';
+import 'openrocket/projection_store.dart';
 import 'protocol/packet.dart';
 import 'settings.dart';
 import 'storage/flight_store.dart';
@@ -16,30 +22,81 @@ class Services {
   final FlightStore store;
   final Recorder recorder;
   final Checklist checklist;
+  final DeviceLocation location;
+  final Projections projections;
+  final Maps maps;
 
-  Services({required this.link, required this.settings, required this.store, required this.recorder, Checklist? checklist})
-      : checklist = checklist ?? Checklist() {
-    // Checklist ticks reset at each launch and each new tracker session.
+  Services(
+      {required this.link,
+      required this.settings,
+      required this.store,
+      required this.recorder,
+      Checklist? checklist,
+      DeviceLocation? location,
+      Projections? projections,
+      Maps? maps})
+      : checklist = checklist ?? Checklist(),
+        location = location ?? DeviceLocation(GeolocatorSource()),
+        projections = projections ?? Projections(),
+        maps = maps ?? Maps() {
+    // "From my location" time zone, only while location is on.
+    this.location.addListener(() {
+      settings.locationTimeZone = this.location.isOn ? this.location.timeZone : null;
+    });
+    // Checklist ticks clear at each launch and each new tracker session,
+    // after a snapshot is kept for the flight record.
+    var boostSeen = false;
     link.frameListeners.add((frame, newSession) {
-      if (newSession || frame.packet.phase == Phase.boost) this.checklist.reset();
+      final boost = frame.packet.phase == Phase.boost;
+      if (newSession || (boost && !boostSeen)) this.checklist.startLaunch();
+      if (newSession) boostSeen = false;
+      if (boost) boostSeen = true;
     });
   }
 
   static Future<Services> create() async {
     final settings = await AppSettings.load();
+    final checklist = await Checklist.load();
+    final flights = await flightsFolder();
+    final projections = Projections(
+      store: ProjectionStore(Directory('${flights.parent.path}${Platform.pathSeparator}projections')),
+      activeId: settings.activeProjectionId,
+      saveActive: (id) => settings.activeProjectionId = id,
+    );
+    await projections.load();
+    final maps = Maps(store: MapPackStore(mapsFolderBeside(flights)));
+    await maps.load();
+    var lastRocket = settings.lastRocketName;
+    settings.addListener(() {
+      if (settings.lastRocketName != lastRocket) projections.rocketChosen(lastRocket = settings.lastRocketName);
+    });
     final link = LinkController()..address = settings.address;
-    final store = FlightStore(await flightsFolder());
+    final store = FlightStore(flights);
     final recorder = Recorder(
       store: store,
       link: link,
       nameFor: (rocketId, started) {
         final profile = settings.profileFor(rocketId);
-        final base = defaultFlightName(rocketId, started);
+        final base = defaultFlightName(rocketId, started, formatTime: settings.formatTime);
         return profile == null ? base : base.replaceFirst('Rocket $rocketId', profile.name);
       },
+      fillMeta: (meta) {
+        checklist.fillFlight(meta);
+        meta.projection = projections.active?.projection;
+        meta.projectionOffsetS = projections.offsetS;
+      },
     );
-    final services = Services(link: link, settings: settings, store: store, recorder: recorder);
+    final services = Services(
+        link: link,
+        settings: settings,
+        store: store,
+        recorder: recorder,
+        checklist: checklist,
+        projections: projections,
+        maps: maps);
     services._watchLink();
+    // Turned on before: start again without a prompt if still allowed.
+    if (settings.useLocation) unawaited(services.location.start(ask: false));
     return services;
   }
 

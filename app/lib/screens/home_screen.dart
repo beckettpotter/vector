@@ -26,11 +26,33 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 1; // HUD
 
+  // Location is never used in the background.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onStateChange: (state) => widget.services.location
+        .setPaused(state == AppLifecycleState.paused || state == AppLifecycleState.hidden),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle;
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   Future<void> _replay(FlightRecord record, List<GroundFrame> frames) async {
     if (frames.isEmpty) return;
     Navigator.of(context).popUntil((r) => r.isFirst);
     setState(() => _tab = 1);
-    await widget.services.link.useSource(ReplayLink(frames, name: record.meta.name, speed: 5));
+    await widget.services.link.useSource(ReplayLink(frames,
+        name: record.meta.name,
+        speed: 5,
+        projection: record.meta.projection,
+        projectionOffsetS: record.meta.projectionOffsetS));
   }
 
   late final DetailActions _actions = DetailActions((context, record, frames) => [
@@ -57,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = widget.services;
     final link = s.link;
     final connect = ConnectBox(link: link);
-    final hud = HudPanel(link: link, settings: s.settings);
+    final hud = HudPanel(link: link, settings: s.settings, projections: s.projections);
 
     return Scaffold(
       appBar: AppBar(title: Text('Vector', style: text.headlineMedium?.copyWith(color: VxColors.accent))),
@@ -88,10 +110,17 @@ class _HomeScreenState extends State<HomeScreen> {
             child: LayoutBuilder(builder: (context, c) {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
-                0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist),
-                2 => TrackView(link: link),
-                3 => RecoveryView(link: link, settings: s.settings),
-                4 => HistoryView(store: s.store, recorder: s.recorder, actions: _actions, onReplay: _replay),
+                0 => PreflightView(
+                    link: link,
+                    settings: s.settings,
+                    checklist: s.checklist,
+                    location: s.location,
+                    projections: s.projections,
+                    maps: s.maps),
+                2 => TrackView(link: link, location: s.location, maps: s.maps, settings: s.settings),
+                3 => RecoveryView(link: link, settings: s.settings, location: s.location),
+                4 => HistoryView(
+                    store: s.store, recorder: s.recorder, settings: s.settings, actions: _actions, onReplay: _replay),
                 _ => ListView(
                     padding: const EdgeInsets.all(16),
                     children: [if (!wide) ...[connect, const SizedBox(height: 16)], hud],

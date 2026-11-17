@@ -2,10 +2,12 @@ import 'package:material_ui/material_ui.dart';
 
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
+import '../openrocket/projection_store.dart';
 import '../protocol/packet.dart';
 import '../settings.dart';
 import '../theme.dart';
 import 'format.dart';
+import 'projection_widgets.dart';
 
 String phaseWord(Phase p) => p.name.toUpperCase();
 
@@ -83,12 +85,13 @@ class StaleBanner extends StatelessWidget {
 class HudPanel extends StatelessWidget {
   final LinkController link;
   final AppSettings settings;
-  const HudPanel({super.key, required this.link, required this.settings});
+  final Projections? projections;
+  const HudPanel({super.key, required this.link, required this.settings, this.projections});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([link, settings]),
+      listenable: Listenable.merge([link, settings, projections]),
       builder: (context, _) {
         final frame = link.monitor.latest;
         if (frame == null) {
@@ -167,6 +170,7 @@ class HudPanel extends StatelessWidget {
                 children: [for (final t in tiles) SizedBox(width: w, child: t)],
               );
             }),
+            if (projections != null) LiveProjectionPanel(link: link, projections: projections!),
           ],
         );
       },
