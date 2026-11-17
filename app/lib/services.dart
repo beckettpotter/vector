@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -5,6 +6,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'checklist.dart';
 import 'link/link_controller.dart';
+import 'location.dart';
 import 'protocol/packet.dart';
 import 'settings.dart';
 import 'storage/flight_store.dart';
@@ -17,9 +19,21 @@ class Services {
   final FlightStore store;
   final Recorder recorder;
   final Checklist checklist;
+  final DeviceLocation location;
 
-  Services({required this.link, required this.settings, required this.store, required this.recorder, Checklist? checklist})
-      : checklist = checklist ?? Checklist() {
+  Services(
+      {required this.link,
+      required this.settings,
+      required this.store,
+      required this.recorder,
+      Checklist? checklist,
+      DeviceLocation? location})
+      : checklist = checklist ?? Checklist(),
+        location = location ?? DeviceLocation(GeolocatorSource()) {
+    // "From my location" time zone, only while location is on.
+    this.location.addListener(() {
+      settings.locationTimeZone = this.location.isOn ? this.location.timeZone : null;
+    });
     // Checklist ticks clear at each launch and each new tracker session,
     // after a snapshot is kept for the flight record.
     var boostSeen = false;
@@ -49,6 +63,8 @@ class Services {
     final services =
         Services(link: link, settings: settings, store: store, recorder: recorder, checklist: checklist);
     services._watchLink();
+    // Turned on before: start again without a prompt if still allowed.
+    if (settings.useLocation) unawaited(services.location.start(ask: false));
     return services;
   }
 

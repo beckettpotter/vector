@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
+import '../location.dart';
 import '../protocol/geo.dart';
 import '../theme.dart';
 import 'format.dart';
@@ -11,12 +12,13 @@ import 'hud_screen.dart' show phaseColor;
 
 class TrackView extends StatelessWidget {
   final LinkController link;
-  const TrackView({super.key, required this.link});
+  final DeviceLocation? location;
+  const TrackView({super.key, required this.link, this.location});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: link,
+      listenable: Listenable.merge([link, location]),
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final track = buildTrack([for (final f in link.sessionFrames) f.packet]);
@@ -30,6 +32,9 @@ class TrackView extends StatelessWidget {
           lostLabel = 'Last known position, age ${formatAge(fixAgeMs)}';
         }
         final distance = track.latestPos?.distanceM ?? 0;
+        final me = location?.state == LocationState.on ? location?.fix : null;
+        final pad = track.pad!;
+        final mePos = me == null ? null : toEastNorth(pad.latDeg, pad.lonDeg, me.lat, me.lon);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -46,7 +51,7 @@ class TrackView extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: CustomPaint(
-                  painter: TrackPainter(track),
+                  painter: TrackPainter(track, me: mePos),
                   child: const SizedBox.expand(),
                 ),
               ),
@@ -60,13 +65,18 @@ class TrackView extends StatelessWidget {
 
 class TrackPainter extends CustomPainter {
   final Track track;
-  TrackPainter(this.track);
+
+  /// This device's position, if "Use my location" is on.
+  final EastNorth? me;
+  TrackPainter(this.track, {this.me});
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final center = size.center(Offset.zero);
-    final maxD = track.points.fold<double>(0, (m, p) => math.max(m, p.pos.distanceM));
+    var maxD = track.points.fold<double>(0, (m, p) => math.max(m, p.pos.distanceM));
+    // Keep the viewer on the plot unless they are very far away.
+    if (me != null && me!.distanceM < 10000) maxD = math.max(maxD, me!.distanceM);
     final rings = chooseRings(math.max(maxD, 50));
     final radiusPx = math.max(10.0, math.min(size.width, size.height) / 2 - 24);
     final pxPerM = radiusPx / rings.last;
@@ -113,6 +123,20 @@ class TrackPainter extends CustomPainter {
     final pad = Rect.fromCenter(center: center, width: 16, height: 16);
     canvas.drawRect(pad, Paint()..color = VxColors.text);
     _label(canvas, 'PAD', center + const Offset(12, 4), VxColors.text, 15);
+
+    // The viewer, as a blue dot.
+    if (me != null && me!.distanceM < 10000) {
+      final at = toPx(me!);
+      canvas.drawCircle(at, 9, Paint()..color = const Color(0xFF2F80ED));
+      canvas.drawCircle(
+          at,
+          9,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..color = Colors.white);
+      _label(canvas, 'YOU', at + const Offset(12, -8), const Color(0xFF5DA3FF), 15);
+    }
 
     // Rocket's latest position, coloured by phase.
     final last = track.latestPos;

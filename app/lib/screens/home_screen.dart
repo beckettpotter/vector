@@ -26,6 +26,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 1; // HUD
 
+  // Location is never used in the background.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onStateChange: (state) => widget.services.location
+        .setPaused(state == AppLifecycleState.paused || state == AppLifecycleState.hidden),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle;
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   Future<void> _replay(FlightRecord record, List<GroundFrame> frames) async {
     if (frames.isEmpty) return;
     Navigator.of(context).popUntil((r) => r.isFirst);
@@ -88,9 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: LayoutBuilder(builder: (context, c) {
               final wide = c.maxWidth >= 1000;
               final Widget content = switch (_tab) {
-                0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist),
-                2 => TrackView(link: link),
-                3 => RecoveryView(link: link, settings: s.settings),
+                0 => PreflightView(link: link, settings: s.settings, checklist: s.checklist, location: s.location),
+                2 => TrackView(link: link, location: s.location),
+                3 => RecoveryView(link: link, settings: s.settings, location: s.location),
                 4 => HistoryView(
                     store: s.store, recorder: s.recorder, settings: s.settings, actions: _actions, onReplay: _replay),
                 _ => ListView(

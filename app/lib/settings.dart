@@ -39,6 +39,7 @@ class AppSettings extends ChangeNotifier {
       final p = await SharedPreferences.getInstance();
       s._prefs = p;
       s._useFeet = _read(() => p.getBool('useFeet'), false);
+      s._useLocation = _read(() => p.getBool('useLocation'), false);
       s._timeZone = _read(() => p.getString('timeZone'), chicagoZone);
       s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
       s._address = _read(() => p.getString('address'), simulatorAddress);
@@ -74,6 +75,17 @@ class AppSettings extends ChangeNotifier {
     if (v == _useFeet) return;
     _useFeet = v;
     _save((p) => p.setBool('useFeet', v));
+    notifyListeners();
+  }
+
+  /// "Use my location" on this device. Off by default. Only the choice is
+  /// saved; positions never are.
+  bool _useLocation = false;
+  bool get useLocation => _useLocation;
+  set useLocation(bool v) {
+    if (v == _useLocation) return;
+    _useLocation = v;
+    _save((p) => p.setBool('useLocation', v));
     notifyListeners();
   }
 
@@ -154,7 +166,7 @@ class AppSettings extends ChangeNotifier {
     return null;
   }
 
-  /// The recovery viewer's typed position (device GPS is not used yet). Not saved.
+  /// The recovery viewer's typed position. Not saved.
   double? viewerLat;
   double? viewerLon;
 }

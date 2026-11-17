@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
+import '../location.dart';
 import '../protocol/navigation.dart';
 import '../protocol/packet.dart';
 import '../settings.dart';
@@ -15,7 +16,8 @@ import 'format.dart';
 class RecoveryView extends StatefulWidget {
   final LinkController link;
   final AppSettings settings;
-  const RecoveryView({super.key, required this.link, required this.settings});
+  final DeviceLocation? location;
+  const RecoveryView({super.key, required this.link, required this.settings, this.location});
 
   @override
   State<RecoveryView> createState() => _RecoveryViewState();
@@ -24,6 +26,7 @@ class RecoveryView extends StatefulWidget {
 class _RecoveryViewState extends State<RecoveryView> {
   final _lat = TextEditingController();
   final _lon = TextEditingController();
+  bool _typeInstead = false;
 
   @override
   void initState() {
@@ -61,7 +64,7 @@ class _RecoveryViewState extends State<RecoveryView> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([widget.link, widget.settings]),
+      listenable: Listenable.merge([widget.link, widget.settings, widget.location]),
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final packets = [for (final f in widget.link.sessionFrames) f.packet];
@@ -75,7 +78,11 @@ class _RecoveryViewState extends State<RecoveryView> {
         _prefillWithPad(pad);
         final fix = lastKnownFix(packets);
         final s = widget.settings;
-        final viewerOk = s.viewerLat != null && s.viewerLon != null;
+        final loc = widget.location;
+        final device = (loc != null && loc.state == LocationState.on && !_typeInstead) ? loc.fix : null;
+        final viewerLat = device?.lat ?? s.viewerLat;
+        final viewerLon = device?.lon ?? s.viewerLon;
+        final viewerOk = viewerLat != null && viewerLon != null;
         final latest = packets.isEmpty ? null : packets.last;
         final flying = latest != null && latest.phase != Phase.landed;
         final linkOld = widget.link.monitor.status != LinkStatus.live;
@@ -99,8 +106,8 @@ class _RecoveryViewState extends State<RecoveryView> {
             ));
           }
           if (viewerOk) {
-            final d = haversineM(s.viewerLat!, s.viewerLon!, r.latDeg, r.lonDeg);
-            final b = bearingDeg(s.viewerLat!, s.viewerLon!, r.latDeg, r.lonDeg);
+            final d = haversineM(viewerLat, viewerLon, r.latDeg, r.lonDeg);
+            final b = bearingDeg(viewerLat, viewerLon, r.latDeg, r.lonDeg);
             children.add(Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(children: [
@@ -121,7 +128,7 @@ class _RecoveryViewState extends State<RecoveryView> {
                     const SizedBox(height: 8),
                     Text('${b.toStringAsFixed(0)}°  ${cardinal16(b)}',
                         style: text.displayMedium?.copyWith(color: VxColors.accent)),
-                    Text('Arrow is north-up (no compass yet)',
+                    Text('Arrow is north-up: turn so you face north, then follow it',
                         style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
                   ]),
                 ),
@@ -154,17 +161,39 @@ class _RecoveryViewState extends State<RecoveryView> {
           ]);
         }
 
+        final locOn = loc != null && loc.state == LocationState.on;
         children.addAll([
           const SizedBox(height: 24),
           Text('Your position', style: text.titleLarge),
-          Text('Type your latitude and longitude. Device GPS is not used yet. Pre-filled with the pad.',
-              style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: _field(_lat, 'Latitude', const Key('viewerLat'))),
-            const SizedBox(width: 12),
-            Expanded(child: _field(_lon, 'Longitude', const Key('viewerLon'))),
-          ]),
+          if (device != null) ...[
+            Text('From this device, accurate to about ${device.accuracyM.toStringAsFixed(0)} m. '
+                'Not saved or sent anywhere.', style: text.bodyLarge?.copyWith(color: VxColors.ok)),
+            SelectableText('${device.lat.toStringAsFixed(7)}, ${device.lon.toStringAsFixed(7)}',
+                style: text.titleLarge),
+          ] else if (locOn && !_typeInstead)
+            Text('Waiting for this device\'s location. Using the typed position until then.',
+                style: text.bodyMedium?.copyWith(color: VxColors.warning)),
+          if (locOn)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('typeInstead'),
+                onPressed: () => setState(() => _typeInstead = !_typeInstead),
+                child: Text(_typeInstead ? 'Use this device\'s location' : 'Type my position instead'),
+              ),
+            ),
+          if (device == null) ...[
+            Text(
+                'Type your latitude and longitude. Pre-filled with the pad.'
+                '${locOn ? '' : ' To use this device\'s location, turn on "Use my location" in Pre-flight.'}',
+                style: text.bodyMedium?.copyWith(color: VxColors.textDim)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: _field(_lat, 'Latitude', const Key('viewerLat'))),
+              const SizedBox(width: 12),
+              Expanded(child: _field(_lon, 'Longitude', const Key('viewerLon'))),
+            ]),
+          ],
         ]);
 
         return ListView(padding: const EdgeInsets.all(16), children: children);

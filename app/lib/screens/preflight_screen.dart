@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../link/link_controller.dart';
 import '../link/link_monitor.dart';
+import '../location.dart';
 import '../protocol/packet.dart';
 import '../checklist.dart';
 import '../settings.dart';
@@ -12,12 +13,14 @@ class PreflightView extends StatelessWidget {
   final LinkController link;
   final AppSettings settings;
   final Checklist checklist;
-  const PreflightView({super.key, required this.link, required this.settings, required this.checklist});
+  final DeviceLocation? location;
+  const PreflightView(
+      {super.key, required this.link, required this.settings, required this.checklist, this.location});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([link, settings, checklist]),
+      listenable: Listenable.merge([link, settings, checklist, location]),
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final frame = link.monitor.status == LinkStatus.live ? link.monitor.latest : null;
@@ -73,8 +76,13 @@ class PreflightView extends StatelessWidget {
                 style: text.bodyMedium?.copyWith(color: VxColors.textDim),
               ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => pickTimeZone(context, settings),
+              onTap: () => pickTimeZone(context, settings, locationOn: location?.isOn ?? false),
             ),
+            if (location != null) ...[
+              const SizedBox(height: 24),
+              Text('Location', style: text.headlineMedium),
+              LocationSetting(settings: settings, location: location!),
+            ],
             const SizedBox(height: 24),
             Text('Warnings', style: text.headlineMedium),
             SwitchListTile(
@@ -361,7 +369,7 @@ String timeZoneChoiceLabel(AppSettings s) => switch (s.timeZone) {
       _ => zoneLabel(s.timeZone),
     };
 
-Future<void> pickTimeZone(BuildContext context, AppSettings settings) async {
+Future<void> pickTimeZone(BuildContext context, AppSettings settings, {bool locationOn = false}) async {
   final choice = await showDialog<String>(
     context: context,
     builder: (ctx) => SimpleDialog(
@@ -370,12 +378,16 @@ Future<void> pickTimeZone(BuildContext context, AppSettings settings) async {
         for (final (value, label, sub) in [
           (chicagoZone, 'Chicago time (default)', 'The club field at Hearne. Daylight saving is handled.'),
           (deviceZoneSetting, "This device's time zone", 'Whatever this phone or computer is set to.'),
-          (locationZoneSetting, 'From my location', 'Uses "Use my location" when it is on.'),
+          (
+            locationZoneSetting,
+            'From my location',
+            locationOn ? 'The zone where this device is now.' : 'Turn on "Use my location" first.'
+          ),
           ('pick', 'Another zone...', 'Pick any zone from a list.'),
         ])
           SimpleDialogOption(
             key: Key('zone_$value'),
-            onPressed: () => Navigator.pop(ctx, value),
+            onPressed: value == locationZoneSetting && !locationOn ? null : () => Navigator.pop(ctx, value),
             child: ListTile(title: Text(label), subtitle: Text(sub)),
           ),
       ],
@@ -431,5 +443,88 @@ class _ZoneListState extends State<_ZoneList> {
       ),
       actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))],
     );
+  }
+}
+
+/// The per-device "Use my location" switch. Vector's own explanation comes
+/// before the system prompt; saying no never blocks anything.
+class LocationSetting extends StatelessWidget {
+  final AppSettings settings;
+  final DeviceLocation location;
+  const LocationSetting({super.key, required this.settings, required this.location});
+
+  Future<void> _turnOn(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Use your location?'),
+        content: const SizedBox(
+          width: 460,
+          child: Text('Vector can show where you are on the map and point you toward the rocket. Your location '
+              "stays on this device. Vector doesn't send it anywhere or save it. You can turn this off any time "
+              'here, and everything still works without it: you can type your position instead.',
+              style: TextStyle(fontSize: 18)),
+        ),
+        actions: [
+          TextButton(key: const Key('locationNotNow'), onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not now')),
+          FilledButton(key: const Key('locationYes'), onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Use my location')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    settings.useLocation = true;
+    await location.start();
+    // If the system said no, the switch goes back off; the line below says why.
+    if (location.state == LocationState.denied) settings.useLocation = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final f = location.fix;
+    final (String line, Color color) = switch (location.state) {
+      LocationState.off => ('Off. Vector uses positions you type.', VxColors.textDim),
+      LocationState.starting => ('Asking this device for its location...', VxColors.textDim),
+      LocationState.on => f == null
+          ? ('On. Waiting for the first position...', VxColors.textDim)
+          : ('On. Accurate to about ${f.accuracyM.toStringAsFixed(0)} m.', VxColors.ok),
+      LocationState.denied => (
+          "Location wasn't allowed, so Vector uses positions you type. You can allow it later in this "
+              "device's settings.",
+          VxColors.textDim
+        ),
+      LocationState.unavailable => (
+          "This device can't provide a location right now. You can type your position instead.",
+          VxColors.textDim
+        ),
+    };
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SwitchListTile(
+        key: const Key('useLocation'),
+        title: Text('Use my location', style: text.titleLarge),
+        subtitle: Text(line, style: text.bodyMedium?.copyWith(color: color)),
+        value: settings.useLocation && location.isOn,
+        onChanged: (v) {
+          if (v) {
+            _turnOn(context);
+          } else {
+            settings.useLocation = false;
+            location.stop();
+          }
+        },
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Only on this device, only while Vector is open. Phones and tablets use GPS: a few meters, and it '
+          'works with no internet. Most laptops and desktops have no GPS: the system guesses from nearby '
+          'Wi-Fi over the internet (tens to hundreds of meters), so at a field with no internet they '
+          'usually cannot find a location. Typing your position always works.',
+          style: text.bodyMedium?.copyWith(color: VxColors.textDim),
+        ),
+      ),
+    ]);
   }
 }

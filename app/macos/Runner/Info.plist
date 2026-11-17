@@ -22,6 +22,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Vector shows where you are on the map and points you toward the rocket. Your location stays on this device and is never saved or sent.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Vector shows where you are on the map and points you toward the rocket. Your location stays on this device and is never saved or sent.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>
