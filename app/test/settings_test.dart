@@ -18,8 +18,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final a = await AppSettings.load();
     expect(a.useFeet, isFalse);
+    expect(a.autoHideWarning, isFalse);
     expect(a.address, simulatorAddress);
     a.useFeet = true;
+    a.autoHideWarning = true;
     a.address = groundNodeAddress;
     a.profiles.add(RocketProfile(name: 'Big Red', motor: 'H128W', massKg: 1.8, trackerId: 7));
     a.saveProfiles();
@@ -28,6 +30,7 @@ void main() {
 
     final b = await AppSettings.load(); // a fresh start reads the saved values
     expect(b.useFeet, isTrue);
+    expect(b.autoHideWarning, isTrue);
     expect(b.address, groundNodeAddress);
     expect(b.lastRocketName, 'Big Red');
     expect(b.profiles.single.motor, 'H128W');

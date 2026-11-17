@@ -48,6 +48,9 @@ class LinkMonitor {
 
   void onRejected() => rejectedCount++;
 
+  /// Clock time of the last valid frame, or null if none yet.
+  int? get lastFrameAtMs => _lastFrameAtMs;
+
   /// Milliseconds since the last valid frame, or null if none yet.
   int? get sinceLastMs => _lastFrameAtMs == null ? null : nowMs() - _lastFrameAtMs!;
 

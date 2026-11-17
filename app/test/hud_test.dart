@@ -26,9 +26,9 @@ void main() {
       theme: buildVectorTheme(),
       home: Scaffold(
         body: ListenableBuilder(
-          listenable: link,
+          listenable: Listenable.merge([link, settings]),
           builder: (context, _) => ListView(children: [
-            StaleBanner(link: link),
+            StaleBanner(link: link, settings: settings),
             HudPanel(link: link, settings: settings),
           ]),
         ),
@@ -73,6 +73,57 @@ void main() {
     link.notifyListeners();
     await tester.pump();
     expect(find.text('LOST: no packet for 31 s'), findsOneWidget);
+  });
+
+  testWidgets('warning can be dismissed after 20 s; chip stays; next outage warns again', (tester) async {
+    await pump(tester);
+    link.handleFrame(makeFrame());
+    now = 6000;
+    link.notifyListeners();
+    await tester.pump();
+    expect(find.byKey(const Key('dismissWarning')), findsNothing); // too early to dismiss
+
+    now = 21000;
+    link.notifyListeners();
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dismissWarning')));
+    await tester.pump();
+    expect(find.textContaining('STALE'), findsNothing);
+    expect(find.text('No link 0:21'), findsOneWidget);
+    expect(find.text('last known'), findsWidgets); // the data is still marked old
+
+    now = 42000; // goes LOST: still dismissed, chip keeps counting
+    link.notifyListeners();
+    await tester.pump();
+    expect(find.textContaining('LOST'), findsNothing);
+    expect(find.text('No link 0:42'), findsOneWidget);
+
+    link.handleFrame(makeFrame(seq: 1, timeMs: 2000)); // frames resume
+    await tester.pump();
+    expect(find.textContaining('No link'), findsNothing);
+    expect(find.text('last known'), findsNothing);
+
+    now = 48000; // the link drops again: full banner is back
+    link.notifyListeners();
+    await tester.pump();
+    expect(find.text('STALE: no packet for 6 s'), findsOneWidget);
+    expect(find.textContaining('No link'), findsNothing);
+  });
+
+  testWidgets('auto-hide setting hides the banner by itself at 20 s', (tester) async {
+    settings.autoHideWarning = true;
+    await pump(tester);
+    link.handleFrame(makeFrame());
+    now = 6000;
+    link.notifyListeners();
+    await tester.pump();
+    expect(find.text('STALE: no packet for 6 s'), findsOneWidget);
+    now = 85000;
+    link.notifyListeners();
+    await tester.pump();
+    expect(find.textContaining('LOST'), findsNothing);
+    expect(find.text('No link 1:25'), findsOneWidget);
+    expect(find.text('last known'), findsWidgets);
   });
 
   testWidgets('max altitude resets on a new session', (tester) async {

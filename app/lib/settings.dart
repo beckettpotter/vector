@@ -38,6 +38,7 @@ class AppSettings extends ChangeNotifier {
       final p = await SharedPreferences.getInstance();
       s._prefs = p;
       s._useFeet = _read(() => p.getBool('useFeet'), false);
+      s._autoHideWarning = _read(() => p.getBool('autoHideWarning'), false);
       s._address = _read(() => p.getString('address'), simulatorAddress);
       s._lastRocketName = _read(() => p.getString('lastRocketName'), '');
       s.profiles = _read(
@@ -71,6 +72,16 @@ class AppSettings extends ChangeNotifier {
     if (v == _useFeet) return;
     _useFeet = v;
     _save((p) => p.setBool('useFeet', v));
+    notifyListeners();
+  }
+
+  /// Hide the STALE/LOST banner by itself once it can be dismissed (20 s).
+  bool _autoHideWarning = false;
+  bool get autoHideWarning => _autoHideWarning;
+  set autoHideWarning(bool v) {
+    if (v == _autoHideWarning) return;
+    _autoHideWarning = v;
+    _save((p) => p.setBool('autoHideWarning', v));
     notifyListeners();
   }
 

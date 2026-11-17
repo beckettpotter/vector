@@ -18,10 +18,17 @@ Color phaseColor(Phase p) => switch (p) {
       Phase.landed => VxColors.text,
     };
 
+/// After this long without a packet the banner can be dismissed (or hides by
+/// itself if the setting is on). The STALE and LOST thresholds do not change.
+const int warningHideAfterMs = 20000;
+
 /// Full-width STALE / LOST banner. Shown on every screen that shows live data.
+/// Once dismissed or auto-hidden, a small "No link" chip stays in its place
+/// until packets come back; the next outage shows the full banner again.
 class StaleBanner extends StatelessWidget {
   final LinkController link;
-  const StaleBanner({super.key, required this.link});
+  final AppSettings settings;
+  const StaleBanner({super.key, required this.link, required this.settings});
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +36,46 @@ class StaleBanner extends StatelessWidget {
     final status = m.status;
     if (status != LinkStatus.stale && status != LinkStatus.lost) return const SizedBox.shrink();
     final lost = status == LinkStatus.lost;
-    final seconds = ((m.sinceLastMs ?? 0) / 1000).floor();
+    final sinceMs = m.sinceLastMs ?? 0;
+    final seconds = (sinceMs / 1000).floor();
+    final color = lost ? VxColors.danger : VxColors.warning;
+    final canHide = sinceMs >= warningHideAfterMs;
+
+    if (canHide && (link.warningDismissed || settings.autoHideWarning)) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+          child: Text(
+            'No link ${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
-      color: lost ? VxColors.danger : VxColors.warning,
+      color: color,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      child: Text(
-        '${lost ? 'LOST' : 'STALE'}: no packet for $seconds s',
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black),
-      ),
+      child: Row(children: [
+        Expanded(
+          child: Text(
+            '${lost ? 'LOST' : 'STALE'}: no packet for $seconds s',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black),
+          ),
+        ),
+        if (canHide)
+          TextButton.icon(
+            key: const Key('dismissWarning'),
+            onPressed: link.dismissWarning,
+            icon: const Icon(Icons.close, color: Colors.black),
+            label: const Text('Dismiss', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
+          ),
+      ]),
     );
   }
 }
