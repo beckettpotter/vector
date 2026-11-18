@@ -25,7 +25,7 @@ cd app && flutter pub get && cd ..
 Then in one terminal:
 
 ```
-python sim/simulate.py --speed 10
+python sim/simulate.py --speed 10 --pad-lat 30.8721 --pad-lon -96.6222
 ```
 
 and in another:
